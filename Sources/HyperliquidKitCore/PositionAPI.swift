@@ -45,8 +45,10 @@ extension Hyperliquid {
         /// Adds margin to an isolated position, or removes it when `amount` is negative, in USD.
         /// (`updateIsolatedMargin`)
         ///
-        /// An amount that is 0.001 millionths or more from a whole number of millionths of a dollar, or
-        /// one too large to send, throws ``ClientError/Reason/invalidRequest`` before anything is sent.
+        /// An amount that is 0.001 millionths or more from a whole number of millionths of a dollar,
+        /// unless it is the same `Double` as its rounding, as the Python SDK compares (which, from
+        /// about $4.4M, accepts larger moves), or one too large to send, throws
+        /// ``ClientError/Reason/invalidRequest`` before anything is sent.
         ///
         /// - Parameters:
         ///   - coin: The perpetual of the isolated position.

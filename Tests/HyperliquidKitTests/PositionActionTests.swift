@@ -201,13 +201,14 @@ extension HyperliquidKitTests {
         private static let invalidInputs: [@Sendable (PositionRequests, TwapRequests) async throws -> Void] = [
             { position, _ in try await position.adjustMargin("BTC", by: .nan) },
             { position, _ in try await position.adjustMargin("BTC", by: 10_000_000_000_000) },
+            { position, _ in try await position.adjustMargin("BTC", by: Decimal(string: "1.000000001")!) },
             { position, _ in try await position.topUpMargin("BTC", toLeverage: Decimal(string: "1.000000001")!) },
             { position, _ in try await position.topUpMargin("BTC", toLeverage: .nan) },
             { _, twap in _ = try await twap.place(.init(.buy, "BTC", size: Decimal(string: "0.000000001")!, duration: .seconds(300))) },
             { _, twap in _ = try await twap.place(.init(.buy, "BTC", size: .nan, duration: .seconds(300))) },
         ]
 
-        @Test(arguments: 0..<6)
+        @Test(arguments: 0..<7)
         func `inputs that can't be sent throw invalid request before anything is sent`(index: Int) async {
             let transport = FakeTransport()
             await #expect {
