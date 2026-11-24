@@ -23,19 +23,17 @@ is not supported.
 
 ## Installation
 
-HyperliquidKit isn't published yet. Until it is, add it to your package from a local checkout in a
-folder named `HyperliquidKit`, then add the `HyperliquidKit` product to your target. The `package:`
-argument is the checkout folder's name:
+Add the package with Swift Package Manager, then add the `HyperliquidKit` product to your target:
 
 ```swift
-.package(path: "../HyperliquidKit"),
+.package(url: "https://github.com/dioKaratzas/hyperliquid-kit.git", from: "0.1.0"),
 ```
 
 ```swift
-.product(name: "HyperliquidKit", package: "HyperliquidKit"),
+.product(name: "HyperliquidKit", package: "hyperliquid-kit"),
 ```
 
-In an Xcode project, use File > Add Package Dependencies > Add Local.
+In an Xcode project, use File > Add Package Dependencies and enter the repository URL.
 
 ## Quick start
 
@@ -66,7 +64,9 @@ Build it in Xcode with Product > Build Documentation, or:
 xcodebuild docbuild -scheme HyperliquidKit -destination 'generic/platform=macOS'
 ```
 
-## Licenses
+## License
+
+Apache License 2.0; see [LICENSE](LICENSE).
 
 HyperliquidKit uses CryptoSwift, whose license requires an app that ships it to acknowledge it in the
 product's documentation, and every distribution to keep this sentence and CryptoSwift's license
