@@ -52,6 +52,18 @@ extension Hyperliquid.ClientError {
             "invalidClientOrderID", summary: "The text isn't a client order ID"
         )
 
+        // MARK: Signing
+
+        /// A private key isn't 32 bytes, or 64 hexadecimal digits, of a valid secp256k1 key, or it
+        /// couldn't sign.
+        public static let invalidPrivateKey = Self(
+            "invalidPrivateKey", summary: "The key isn't a usable secp256k1 private key"
+        )
+        /// A signature doesn't have a 32-byte `r` and `s` and a `v` of 27 or 28.
+        public static let invalidSignature = Self(
+            "invalidSignature", summary: "The signature doesn't have a 32-byte r and s and a v of 27 or 28"
+        )
+
         // MARK: Client setup
 
         /// An action was called on a client without a signer.

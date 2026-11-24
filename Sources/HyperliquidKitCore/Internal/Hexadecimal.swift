@@ -18,3 +18,34 @@ func isPrefixedHexadecimal(_ text: String, digitCount: Int) -> Bool {
         }
     }
 }
+
+extension [UInt8] {
+    /// The bytes `digits` spells, two hexadecimal digits per byte, or `nil` when it holds anything else.
+    package init?(hexadecimal digits: some StringProtocol) {
+        let characters = Array(digits.utf8)
+        guard characters.count.isMultiple(of: 2) else { return nil }
+        self.init()
+        reserveCapacity(characters.count / 2)
+        for index in stride(from: 0, to: characters.count, by: 2) {
+            guard let high = nibble(characters[index]), let low = nibble(characters[index + 1]) else { return nil }
+            append(high << 4 | low)
+        }
+    }
+}
+
+/// `0x` and the bytes as lower-case hexadecimal digits, two per byte.
+package func hexadecimal(_ bytes: some Sequence<UInt8>) -> String {
+    "0x" + bytes.map { byte in
+        let digits = String(byte, radix: 16)
+        return byte < 0x10 ? "0" + digits : digits
+    }.joined()
+}
+
+private func nibble(_ character: UInt8) -> UInt8? {
+    switch character {
+    case UInt8(ascii: "0")...UInt8(ascii: "9"): character - UInt8(ascii: "0")
+    case UInt8(ascii: "a")...UInt8(ascii: "f"): character - UInt8(ascii: "a") + 10
+    case UInt8(ascii: "A")...UInt8(ascii: "F"): character - UInt8(ascii: "A") + 10
+    default: nil
+    }
+}

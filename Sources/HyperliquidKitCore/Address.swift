@@ -44,5 +44,10 @@ extension Hyperliquid {
             var container = encoder.singleValueContainer()
             try container.encode(description)
         }
+
+        /// The 20 bytes the address spells, as signatures cover them.
+        package var bytes: [UInt8] {
+            [UInt8](hexadecimal: description.dropFirst(2))!
+        }
     }
 }

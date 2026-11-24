@@ -15,6 +15,8 @@ extension HyperliquidKitTests {
                 Hyperliquid.TransactionHash.self, Hyperliquid.Network.self, Hyperliquid.Slippage.self,
                 Hyperliquid.Side.self, Hyperliquid.TimeInForce.self, Hyperliquid.TriggerKind.self,
                 Hyperliquid.OrderStatus.self, Hyperliquid.MarginMode.self, Hyperliquid.AccountMode.self,
+                (any Hyperliquid.Signer).self, Hyperliquid.SigningRequest.self, Hyperliquid.Signature.self,
+                Hyperliquid.PrivateKeySigner.self,
             ]
             _ = types
         }

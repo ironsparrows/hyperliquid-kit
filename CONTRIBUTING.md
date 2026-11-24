@@ -33,7 +33,7 @@ Linux is a supported platform but has no local check yet. `swift build` and `swi
 - Swift Testing only: a root `@Suite` per test target with nested suites, one suite per file and the file named after it; sentence names in backticks; `@Test(arguments:)` for tables.
 - Unit tests run offline. Tag read-only tests against the live Hyperliquid servers `.live` and skip them unless `HYPERLIQUID_LIVE=1` is set. They read public data, or an account's state by the address in `HYPERLIQUID_ACCOUNT`; none of them signs.
 - Suites that place real orders are tagged `.liveOrders` and skip unless `HYPERLIQUID_LIVE_RUN` names the run and `HYPERLIQUID_ACCOUNT` and `HYPERLIQUID_AGENT_KEY` are set. Only the account owner runs them.
-- Never put a private key in a file, fixture or log. Recordings use fake addresses.
+- Never put a private key in a file, fixture or log. The one exception is the Python SDK's published test key, which signs the signing vectors. Recordings use fake addresses.
 
 ## Commits
 
