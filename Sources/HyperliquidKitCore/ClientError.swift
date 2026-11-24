@@ -114,15 +114,7 @@ extension Hyperliquid.ClientError {
 
         // MARK: Streams
 
-        /// Hyperliquid refused a stream subscription, or closed the connection when it was sent.
-        public static let subscriptionRejected = Self(
-            "subscriptionRejected", summary: "Hyperliquid rejected the stream subscription"
-        )
-        /// Hyperliquid didn't acknowledge a stream request in time.
-        public static let acknowledgementTimedOut = Self(
-            "acknowledgementTimedOut", summary: "Hyperliquid didn't acknowledge the stream request in time"
-        )
-        /// The stream connection closed.
+        /// The stream connection closed, or a stream message couldn't be sent on it.
         public static let connectionClosed = Self("connectionClosed", summary: "The stream connection closed")
 
         // MARK: Network

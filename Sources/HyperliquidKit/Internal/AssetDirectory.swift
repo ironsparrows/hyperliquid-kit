@@ -31,6 +31,11 @@ actor AssetDirectory {
         return asset
     }
 
+    /// Throws `unknownCoin` unless Hyperliquid lists the perp DEX; the first perp DEX always passes.
+    func check(_ dex: Hyperliquid.PerpDex) async throws {
+        if dex != .first { _ = try await offset(of: dex) }
+    }
+
     private func assets(on dex: Hyperliquid.PerpDex) async throws -> [Hyperliquid.Coin: Asset] {
         let task = assets[dex] ?? Task { [info] in
             let offset = dex == .first ? 0 : try await self.offset(of: dex)

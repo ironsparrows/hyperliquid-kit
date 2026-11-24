@@ -36,11 +36,11 @@ extension HyperliquidKitCoreTests {
         }
 
         @Test func `a client error describes its reason and message`() {
-            let error = Hyperliquid.ClientError(.subscriptionRejected, message: "Error parsing JSON")
-            #expect(error.description == "Hyperliquid client error: subscriptionRejected: Error parsing JSON")
+            let error = Hyperliquid.ClientError(.connectionClosed, message: "The server went away")
+            #expect(error.description == "Hyperliquid client error: connectionClosed: The server went away")
             #expect(
                 (error as any Error).localizedDescription
-                    == "Hyperliquid rejected the stream subscription: Error parsing JSON"
+                    == "The stream connection closed: The server went away"
             )
             #expect(Hyperliquid.ClientError(.missingSigner).errorDescription == "The client has no signer for an action")
         }

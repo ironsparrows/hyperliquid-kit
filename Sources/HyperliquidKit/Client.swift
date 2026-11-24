@@ -12,6 +12,8 @@ extension Hyperliquid {
         public let position: any PositionAPI
         public let order: any OrderAPI
         public let twap: any TwapAPI
+        public let stream: any StreamAPI
+        private let connection: StreamConnection
 
         /// Creates a client for the configuration's network.
         ///
@@ -26,12 +28,16 @@ extension Hyperliquid {
         public convenience init(
             account: Hyperliquid.Address? = nil, signer: (any Hyperliquid.Signer)? = nil, configuration: Configuration = .init()
         ) {
-            self.init(account: account, signer: signer, configuration: configuration, transport: AsyncHTTPClientTransport())
+            self.init(
+                account: account, signer: signer, configuration: configuration, transport: AsyncHTTPClientTransport(),
+                webSocketTransport: WebSocketKitTransport()
+            )
         }
 
         init(
             account: Hyperliquid.Address? = nil, signer: (any Hyperliquid.Signer)? = nil, configuration: Configuration,
-            transport: any HTTPTransport, nonces: NonceSource = .shared
+            transport: any HTTPTransport, webSocketTransport: any WebSocketTransport = WebSocketKitTransport(),
+            nonces: NonceSource = .shared
         ) {
             let info = InfoClient(network: configuration.network, transport: transport, timeout: configuration.timeout)
             let exchange = ExchangeClient(
@@ -46,6 +52,15 @@ extension Hyperliquid {
             position = PositionRequests(info: info, exchange: exchange, directory: directory, account: account)
             order = OrderRequests(info: info, exchange: exchange, directory: directory, account: account)
             twap = TwapRequests(info: info, exchange: exchange, directory: directory, account: account)
+            connection = StreamConnection(
+                url: configuration.network.streamURL, transport: webSocketTransport, directory: directory
+            )
+            stream = Streams(connection: connection)
+        }
+
+        /// Closes the stream connection.
+        deinit {
+            Task { [connection] in await connection.disconnect() }
         }
     }
 }

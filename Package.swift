@@ -39,6 +39,7 @@ let package = Package(
                 "HyperliquidKitCore",
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
                 .product(name: "CryptoSwift", package: "CryptoSwift"),
+                .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOHTTP1", package: "swift-nio"),
                 .product(name: "P256K", package: "swift-secp256k1"),
@@ -67,6 +68,8 @@ let package = Package(
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOHTTP1", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
+                .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
+                .product(name: "NIOWebSocket", package: "swift-nio"),
             ],
             swiftSettings: swiftSettings
         ),

@@ -14,5 +14,6 @@ extension Hyperliquid {
         var position: any PositionAPI { get }
         var order: any OrderAPI { get }
         var twap: any TwapAPI { get }
+        var stream: any StreamAPI { get }
     }
 }
