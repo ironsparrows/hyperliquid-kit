@@ -312,9 +312,9 @@ extension HyperliquidKitTests {
             }
         }
 
-        @Test(arguments: [#"{"channel":"l2","data":{"c":"AAAA"}}"#, #"{"channel":"l2","data":{}}"#])
-        func `an order book push whose coin can't be read goes to every book update stream`(frame: String) {
-            #expect(StreamConnection.routed(Data(frame.utf8))?.destination == .channel("l2"))
+        @Test func `a compressed diff that doesn't inflate goes to every book update stream, another shape nowhere`() {
+            #expect(StreamConnection.routed(Data(#"{"channel":"l2","data":{"c":"AAAA"}}"#.utf8))?.destination == .channel("l2"))
+            #expect(StreamConnection.routed(Data(#"{"channel":"l2","data":{}}"#.utf8)) == nil)
         }
 
         private struct Push: Decodable {

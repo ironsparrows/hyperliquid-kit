@@ -133,14 +133,14 @@ actor StreamConnection {
     /// what to yield. Every push is merged; a slow reader gets only the latest element.
     nonisolated func stream<State: Sendable, Element: Sendable>(
         _ subscription: Subscription, initial: State,
-        merge: @escaping @Sendable (inout State, Data) async throws -> [Element]
+        merge: @escaping @Sendable (inout State, Data) throws -> [Element]
     ) -> AsyncThrowingStream<Element, any Error> {
         stream(subscription, keepingEveryPush: true, keepingEveryElement: false, initial: initial, reduce: merge)
     }
 
     private nonisolated func stream<State: Sendable, Element: Sendable>(
         _ subscription: Subscription, keepingEveryPush: Bool, keepingEveryElement: Bool, initial: State,
-        reduce: @escaping @Sendable (inout State, Data) async throws -> [Element]
+        reduce: @escaping @Sendable (inout State, Data) throws -> [Element]
     ) -> AsyncThrowingStream<Element, any Error> {
         let (stream, continuation) = AsyncThrowingStream.makeStream(
             of: Element.self, bufferingPolicy: keepingEveryElement ? .unbounded : .bufferingNewest(1)
@@ -156,7 +156,7 @@ actor StreamConnection {
                 switch item {
                 case .push(let data):
                     do {
-                        for element in try await reduce(&state, data) { continuation.yield(element) }
+                        for element in try reduce(&state, data) { continuation.yield(element) }
                     } catch {
                         continuation.finish(throwing: error)
                         return
@@ -217,8 +217,9 @@ actor StreamConnection {
             let session = try await openSession()
             guard consumers[id] != nil else { return }
             let topic = subscription.topic
-            if let streaming = requests[topic], streaming != subscription.request || subscription.buildsOnSnapshot {
-                // Streams that ended but whose removal is still on its way don't hold the topic.
+            if requests[topic] != nil {
+                // Streams that ended but whose removal is still on its way don't hold the topic: a stream
+                // that replaces one subscribes afresh and gets its own snapshot.
                 if let unsubscribe = purgeTerminated(topic) {
                     try? await session.send(unsubscribe)
                 }
@@ -361,12 +362,19 @@ actor StreamConnection {
         try? await connection.session.send(#"{"method":"ping"}"#)
     }
 
-    /// The connection ended without `disconnect()`: every stream on it ends with `connectionClosed`.
+    /// The connection ended without `disconnect()`: every stream subscribed on it ends with
+    /// `connectionClosed`. Streams still being checked go on, and open a new connection.
     private func closed(_ id: UInt64) {
         guard let current = connection, current.id == id else { return }
         connection = nil
         current.pinger.cancel()
-        finishAll(throwing: Hyperliquid.ClientError(.connectionClosed))
+        let subscribed = Set(subscribers.values.joined())
+        subscribers = [:]
+        requests = [:]
+        for id in subscribed {
+            guard let consumer = consumers.removeValue(forKey: id) else { continue }
+            finish(consumer, id, throwing: Hyperliquid.ClientError(.connectionClosed))
+        }
     }
 
     // MARK: Receiving
@@ -390,85 +398,6 @@ actor StreamConnection {
         }
     }
 
-    /// Where the frame goes and the push its streams read, worked out off the connection's actor, or
-    /// `nil` for a frame no stream reads.
-    @concurrent
-    private static func route(_ frame: String) async -> (destination: Destination, push: Data)? {
-        routed(Data(frame.utf8))
-    }
-
-    /// The topic of a push, from the push alone, or `nil` for a frame no stream reads or one bound for
-    /// every topic of its channel.
-    static func topic(of frame: Data) -> Topic? {
-        guard case .topic(let topic) = routed(frame)?.destination else { return nil }
-        return topic
-    }
-
-    /// Where a push goes, from the push alone, and the push its streams read: the frame itself, or for
-    /// a compressed order book diff `{"data": {"u": …}}` holding the inflated diff, which routing had
-    /// to inflate to read its coin. `nil` for a frame no stream reads: a pong, an error, an
-    /// acknowledgement, a channel the client doesn't route, an empty trades push, or text that isn't
-    /// JSON.
-    ///
-    /// Account pushes are keyed by their lower-cased `user`, except order updates, events (channel
-    /// `user`) and notifications, which carry none and share one topic per channel. Order book diffs
-    /// (`l2`) are keyed by the coin inside them; one that doesn't inflate goes to every `l2` stream,
-    /// which then ends with the error. `fastAssetCtxs` and `pac` go to their one stream, which
-    /// inflates them.
-    static func routed(_ frame: Data) -> (destination: Destination, push: Data)? {
-        guard let push = try? JSONDecoder().decode(RoutingPush.self, from: frame) else { return nil }
-        switch push.channel {
-        case "fastAssetCtxs", "pac":
-            return (.topic(Topic(channel: push.channel, key: "")), frame)
-        case "l2":
-            return push.bookUpdate.map { routedBookUpdate($0, frame: frame) }
-        default:
-            return push.data.flatMap { topic(channel: push.channel, fields: $0) }.map { (.topic($0), frame) }
-        }
-    }
-
-    /// An `l2` push: a snapshot or plain diff as it came, or a compressed diff inflated into `{"u": …}`.
-    private static func routedBookUpdate(_ update: RoutingPush.BookUpdate, frame: Data)
-        -> (destination: Destination, push: Data)
-    {
-        if let coin = update.snapshotCoin ?? update.diffCoin {
-            return (.topic(Topic(channel: "l2", key: coin)), frame)
-        }
-        guard let text = update.compressed, let json = inflated(base64: text),
-            let diff = try? JSONDecoder().decode(RoutingPush.DiffCoin.self, from: json)
-        else { return (.channel("l2"), frame) }
-        let push = Data(#"{"data":{"u":"#.utf8) + json + Data("}}".utf8)
-        return (.topic(Topic(channel: "l2", key: diff.c)), push)
-    }
-
-    /// The topic of a push on a channel routed by plain fields of its data.
-    private static func topic(channel: String, fields: RoutingPush.Fields) -> Topic? {
-        let user = fields.user?.lowercased()
-        switch channel {
-        case "allMids":
-            // A push from the first perp DEX carries no `dex`.
-            return Topic(channel: channel, key: fields.dex ?? "")
-        case "l2Book", "bbo", "trades", "activeAssetCtx":
-            return fields.coin.map { Topic(channel: channel, key: $0) }
-        case "candle":
-            guard let coin = fields.s, let interval = fields.i else { return nil }
-            return Topic(channel: channel, key: "\(coin),\(interval)")
-        case "orderUpdates", "user", "notification":
-            return Topic(channel: channel, key: "")
-        case "userFills", "userFundings", "userNonFundingLedgerUpdates", "userTwapSliceFills", "userTwapHistory",
-            "spotState":
-            return user.map { Topic(channel: channel, key: $0) }
-        case "clearinghouseState", "openOrders", "twapStates":
-            guard let user, let dex = fields.dex else { return nil }
-            return Topic(channel: channel, key: "\(user),\(dex)")
-        case "activeAssetData":
-            guard let coin = fields.coin, let user else { return nil }
-            return Topic(channel: channel, key: "\(coin),\(user)")
-        default:
-            return nil
-        }
-    }
-
     // MARK: Inspecting
 
     /// How many streams and subscriptions the connection tracks, for tests.
@@ -477,82 +406,6 @@ actor StreamConnection {
     }
 
     // MARK: Wire
-
-    /// The fields a push is routed by: `{"channel": …, "data": …}`, where `data` is an object or, for
-    /// trades, order updates and a candle array, a list whose first item carries them.
-    private struct RoutingPush: Decodable {
-        struct Fields: Decodable {
-            let coin: String?
-            let dex: String?
-            let user: String?
-            let s: String?
-            let i: String?
-
-            init(from decoder: any Decoder) throws {
-                if var list = try? decoder.unkeyedContainer() {
-                    guard !list.isAtEnd else {
-                        (coin, dex, user, s, i) = (nil, nil, nil, nil, nil)
-                        return
-                    }
-                    self = try list.decode(Fields.self)
-                    return
-                }
-                let container = try decoder.container(keyedBy: CodingKeys.self)
-                coin = try? container.decodeIfPresent(String.self, forKey: .coin)
-                dex = try? container.decodeIfPresent(String.self, forKey: .dex)
-                user = try? container.decodeIfPresent(String.self, forKey: .user)
-                s = try? container.decodeIfPresent(String.self, forKey: .s)
-                i = try? container.decodeIfPresent(String.self, forKey: .i)
-            }
-
-            private enum CodingKeys: String, CodingKey {
-                case coin, dex, user, s, i
-            }
-        }
-
-        /// `l2` data: `{"s": book}`, `{"u": diff}` or `{"c": compressed diff}`.
-        struct BookUpdate: Decodable {
-            let snapshotCoin: String?
-            let diffCoin: String?
-            let compressed: String?
-
-            private enum CodingKeys: String, CodingKey {
-                case s, u, c
-            }
-
-            init(from decoder: any Decoder) throws {
-                let container = try decoder.container(keyedBy: CodingKeys.self)
-                snapshotCoin = (try? container.decodeIfPresent(SnapshotCoin.self, forKey: .s))?.coin
-                diffCoin = (try? container.decodeIfPresent(DiffCoin.self, forKey: .u))?.c
-                compressed = try? container.decodeIfPresent(String.self, forKey: .c)
-            }
-        }
-
-        /// A book snapshot's coin.
-        struct SnapshotCoin: Decodable {
-            let coin: String
-        }
-
-        /// A book diff's coin.
-        struct DiffCoin: Decodable {
-            let c: String
-        }
-
-        let channel: String
-        let data: Fields?
-        let bookUpdate: BookUpdate?
-
-        private enum CodingKeys: String, CodingKey {
-            case channel, data
-        }
-
-        init(from decoder: any Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            channel = try container.decode(String.self, forKey: .channel)
-            data = try? container.decodeIfPresent(Fields.self, forKey: .data)
-            bookUpdate = channel == "l2" ? try? container.decodeIfPresent(BookUpdate.self, forKey: .data) : nil
-        }
-    }
 
     /// `{"method": …, "subscription": …}`.
     private static func message(_ method: String, _ subscription: ActionValue) -> String {

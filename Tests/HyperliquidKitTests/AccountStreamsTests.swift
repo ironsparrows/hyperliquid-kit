@@ -190,6 +190,21 @@ extension HyperliquidKitTests {
             await connection.disconnect()
         }
 
+        @Test func `a fills stream started as the last one ends subscribes afresh, for its own snapshot`() async throws {
+            let transport = FakeWebSocketTransport()
+            let (streams, connection) = Self.streams(transport)
+            let first = Task { for try await _ in streams.fills() {} }
+            let session = try await transport.session()
+            _ = try await session.sent(atLeast: 1)
+            first.cancel()
+            _ = await first.result
+            let second = Task { for try await _ in streams.fills() {} }
+            let subscribe = #"{"method":"subscribe","subscription":{"type":"userFills","user":"0x0000000000000000000000000000000000000001"}}"#
+            #expect(try await session.sent(atLeast: 3) == [subscribe, subscribe.replacingOccurrences(of: "subscribe", with: "unsubscribe"), subscribe])
+            second.cancel()
+            await connection.disconnect()
+        }
+
         @Test func `a fills stream that joins a streaming subscription starts with the next new fills`() async throws {
             let transport = FakeWebSocketTransport()
             let (streams, connection) = Self.streams(transport)

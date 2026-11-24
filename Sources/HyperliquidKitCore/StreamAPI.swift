@@ -28,7 +28,8 @@ extension Hyperliquid {
     /// - with ``ClientError/Reason/invalidRequest`` for an order book of a coin already streaming at
     ///   another precision, fills already streaming with the other `aggregateByTime`, or order
     ///   updates, events or notifications already streaming for another account: Hyperliquid's
-    ///   pushes don't say which of them they are for;
+    ///   pushes don't say which of them they are for. Streams started at the same moment subscribe in
+    ///   no fixed order, so which of two such streams is refused isn't fixed either;
     /// - with the decoding error when a push can't be read;
     /// - without an error after ``disconnect()``, or when the client is released.
     ///
@@ -114,6 +115,9 @@ extension Hyperliquid {
 
         /// The account's fills: a snapshot of recent fills, then new ones, every batch kept in order.
         /// (`userFills`)
+        ///
+        /// After switching `aggregateByTime`, by ending one stream and starting another, the first
+        /// batches can still be in the old form.
         ///
         /// - Parameters:
         ///   - aggregateByTime: Combines the partial fills of a crossing order that matched several
