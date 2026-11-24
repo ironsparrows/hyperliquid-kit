@@ -131,7 +131,7 @@ extension HyperliquidKitTests {
                 (.allMids(.named("nope")), .unknownCoin),
             ]
             for (subscription, reason) in refused {
-                let stream = connection.stream(subscription, bufferingPolicy: .unbounded) { $0 }
+                let stream = connection.stream(subscription, buffering: .all) { $0 }
                 await #expect {
                     for try await _ in stream {}
                 } throws: { error in
@@ -148,7 +148,7 @@ extension HyperliquidKitTests {
             let subscription = StreamConnection.Subscription(
                 topic: .init(channel: "trades", key: "BTC"), request: ["type": "trades", "coin": "BTC"], coin: "BTC"
             )
-            let reading = Task { for try await _ in connection.stream(subscription, bufferingPolicy: .unbounded, decode: { $0 }) {} }
+            let reading = Task { for try await _ in connection.stream(subscription, buffering: .all, decode: { $0 }) {} }
             let session = try await transport.session()
             #expect(try await session.sent(atLeast: 1) == [#"{"method":"subscribe","subscription":{"type":"trades","coin":"BTC"}}"#])
             reading.cancel()
@@ -162,7 +162,7 @@ extension HyperliquidKitTests {
                 topic: .init(channel: "trades", key: "BTC"), request: ["type": "trades", "coin": "BTC"], coin: "BTC"
             )
             for _ in 0..<50 {
-                _ = connection.stream(subscription, bufferingPolicy: .unbounded) { $0 }
+                _ = connection.stream(subscription, buffering: .all) { $0 }
             }
             try await Self.expectEmpty(connection)
             // A stream may win the race and subscribe before its end arrives; every subscription is removed.
@@ -269,6 +269,45 @@ extension HyperliquidKitTests {
             }
         }
 
+        @Test func `an event stream delivers every queued push before the drop's error`() async throws {
+            let transport = FakeWebSocketTransport()
+            let connection = Self.connection(transport, http: FakeTransport(json: Self.meta))
+            let subscription = StreamConnection.Subscription(
+                topic: .init(channel: "trades", key: "BTC"), request: ["type": "trades", "coin": "BTC"], coin: "BTC"
+            )
+            let stream = connection.stream(subscription, buffering: .all) { String(decoding: $0, as: UTF8.self) }
+            let session = try await transport.session()
+            _ = try await session.sent(atLeast: 1)
+            let frames = (0..<20).map { #"{"channel":"trades","data":[{"coin":"BTC","n":\#($0)}]}"# }
+            for frame in frames { await session.push(frame) }
+            await session.drop()
+            var received: [String] = []
+            await #expect {
+                for try await frame in stream { received.append(frame) }
+            } throws: { error in
+                (error as? Hyperliquid.ClientError)?.reason == .connectionClosed
+            }
+            #expect(received == frames)
+        }
+
+        @Test func `a state stream ends with the drop's error, and a disconnect ends streams without one`() async throws {
+            let transport = FakeWebSocketTransport()
+            let connection = Self.connection(transport)
+            let streams = Streams(connection: connection)
+            let dropped = streams.mids()
+            let session = try await transport.session()
+            _ = try await session.sent(atLeast: 1)
+            await session.push(Self.mids(#""BTC":"1""#))
+            await session.drop()
+            await #expect(throws: Hyperliquid.ClientError.self) { for try await _ in dropped {} }
+            let disconnected = streams.mids()
+            let second = try await eventually { await transport.sessions.count == 2 ? transport.sessions.last : nil }
+            _ = try await second.sent(atLeast: 1)
+            await second.push(Self.mids(#""BTC":"2""#))
+            await connection.disconnect()
+            for try await _ in disconnected {}
+        }
+
         @Test func `disconnecting closes the connection and ends every stream without an error`() async throws {
             let transport = FakeWebSocketTransport()
             let streams = Streams(connection: Self.connection(transport))
@@ -295,7 +334,7 @@ extension HyperliquidKitTests {
         @Test func `a released connection ends its streams with connection closed`() async throws {
             let transport = FakeWebSocketTransport()
             var connection: StreamConnection? = Self.connection(transport)
-            let stream = try #require(connection).stream(.allMids(.first), bufferingPolicy: .unbounded) { $0 }
+            let stream = try #require(connection).stream(.allMids(.first), buffering: .all) { $0 }
             let session = try await transport.session()
             _ = try await session.sent(atLeast: 1)
             connection = nil

@@ -19,5 +19,25 @@ extension HyperliquidKitTests {
             #expect(try await builder.next()?.keys.allSatisfy { $0.dex == dex } == true)
             await client.stream.disconnect()
         }
+
+        @Test func `BTC market streams decode a few values each`() async throws {
+            let client = Hyperliquid.Client()
+            for try await book in client.stream.orderBook("BTC", precision: .significantFigures(.five)).prefix(2) {
+                #expect(book.coin == "BTC")
+            }
+            for try await best in client.stream.bestBidOffer("BTC").prefix(3) {
+                #expect(best.coin == "BTC")
+            }
+            for try await batch in client.stream.trades("BTC").prefix(2) {
+                #expect(batch.allSatisfy { $0.coin == "BTC" })
+            }
+            for try await candle in client.stream.candles("BTC", interval: .oneMinute).prefix(2) {
+                #expect(candle.interval == .oneMinute)
+            }
+            for try await context in client.stream.assetContext("BTC").prefix(2) {
+                #expect(context.markPrice > 0)
+            }
+            await client.stream.disconnect()
+        }
     }
 }

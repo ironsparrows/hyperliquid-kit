@@ -60,6 +60,9 @@ actor StreamConnection {
     private var finishing: Set<UUID> = []
     /// Bumped by every ``disconnect()``: a stream created before one doesn't subscribe after it.
     private let generation = NIOLockedValueBox<UInt64>(0)
+    /// Streams that have ended, recorded at once, before their removal reaches the actor: a new
+    /// subscription that conflicts only with ended streams removes them first.
+    private let terminated = NIOLockedValueBox<Set<UUID>>([])
 
     init(url: URL, transport: any WebSocketTransport, directory: AssetDirectory, pingInterval: Duration = .seconds(50)) {
         self.url = url
@@ -81,29 +84,74 @@ actor StreamConnection {
 
     // MARK: Streams
 
-    /// A stream of the pushes of `subscription`, each decoded by `decode`.
+    /// How a stream keeps pushes its reader hasn't taken yet.
+    enum Buffering: Sendable {
+        /// Only the latest push: for state that each push replaces, such as a book.
+        case latest
+        /// Every push, in order: for events, such as trades.
+        case all
+    }
+
+    /// What the connection hands a stream: a push to decode, or the stream's end.
+    private enum Delivery: Sendable {
+        case push(Data)
+        case end((any Error)?)
+    }
+
+    /// A stream of the pushes of `subscription`, each decoded by `decode` off the connection's actor, in
+    /// the order they arrived.
     ///
     /// The subscription is sent when the stream is created; ending the stream, by cancelling its task or
-    /// dropping it, removes it. A push that doesn't decode ends the stream with the decoding error.
+    /// dropping it, removes it. A push that fails to decode ends the stream with the decoding error; a
+    /// latest-only stream can skip a push before decoding it, when a newer one arrives first.
     nonisolated func stream<Element: Sendable>(
-        _ subscription: Subscription, bufferingPolicy: AsyncThrowingStream<Element, any Error>.Continuation.BufferingPolicy,
-        decode: @escaping @Sendable (Data) throws -> Element
+        _ subscription: Subscription, buffering: Buffering, decode: @escaping @Sendable (Data) throws -> Element
     ) -> AsyncThrowingStream<Element, any Error> {
-        let (stream, continuation) = AsyncThrowingStream.makeStream(of: Element.self, bufferingPolicy: bufferingPolicy)
+        stream(subscription, buffering: buffering, decodeEach: { [try decode($0)] })
+    }
+
+    /// A stream of the elements each push of `subscription` holds, as `decodeEach` reads them.
+    nonisolated func stream<Element: Sendable>(
+        _ subscription: Subscription, buffering: Buffering, decodeEach: @escaping @Sendable (Data) throws -> [Element]
+    ) -> AsyncThrowingStream<Element, any Error> {
+        let (stream, continuation) = AsyncThrowingStream.makeStream(
+            of: Element.self, bufferingPolicy: buffering == .latest ? .bufferingNewest(1) : .unbounded
+        )
+        // Pushes queue here, then a task of the stream's own decodes them; a latest-only stream keeps only
+        // the newest, and its end replaces whatever is queued.
+        let (deliveries, delivery) = AsyncStream.makeStream(
+            of: Delivery.self, bufferingPolicy: buffering == .latest ? .bufferingNewest(1) : .unbounded
+        )
+        let decoder = Task {
+            for await item in deliveries {
+                switch item {
+                case .push(let data):
+                    do {
+                        for element in try decodeEach(data) { continuation.yield(element) }
+                    } catch {
+                        continuation.finish(throwing: error)
+                        return
+                    }
+                case .end(let error):
+                    continuation.finish(throwing: error)
+                    return
+                }
+            }
+        }
         let id = UUID()
         let created = generation.withLockedValue { $0 }
         let consumer = Consumer(
             topic: subscription.topic,
-            deliver: { data in
-                do {
-                    continuation.yield(try decode(data))
-                } catch {
-                    continuation.finish(throwing: error)
-                }
-            },
-            finish: { error in continuation.finish(throwing: error) }
+            deliver: { data in delivery.yield(.push(data)) },
+            finish: { error in
+                delivery.yield(.end(error))
+                delivery.finish()
+            }
         )
         continuation.onTermination = { [weak self] _ in
+            self?.terminated.withLockedValue { _ = $0.insert(id) }
+            decoder.cancel()
+            delivery.finish()
             Task { await self?.remove(id) }
         }
         Task { await self.add(id, subscription, consumer, generation: created) }
@@ -140,6 +188,19 @@ actor StreamConnection {
             let session = try await openSession()
             guard consumers[id] != nil else { return }
             let topic = subscription.topic
+            if let streaming = requests[topic], streaming != subscription.request {
+                // Streams that ended but whose removal is still on its way don't hold the topic.
+                if let unsubscribe = purgeTerminated(topic) {
+                    try? await session.send(unsubscribe)
+                }
+                guard consumers[id] != nil else { return }
+            }
+            if let streaming = requests[topic], streaming != subscription.request {
+                // Pushes don't say which parameters they were sent for, so two variants can't share a topic.
+                throw Hyperliquid.ClientError(
+                    .invalidRequest, message: "\(topic.channel) for \(topic.key) is already streaming with other parameters"
+                )
+            }
             let isFirst = subscribers[topic, default: []].isEmpty
             subscribers[topic, default: []].insert(id)
             if isFirst {
@@ -154,6 +215,7 @@ actor StreamConnection {
     }
 
     private func remove(_ id: UUID) async {
+        terminated.withLockedValue { _ = $0.remove(id) }
         if finishing.remove(id) != nil { return }
         guard let consumer = consumers.removeValue(forKey: id) else {
             ended.insert(id)
@@ -175,6 +237,21 @@ actor StreamConnection {
         }
         subscribers[topic] = ids
         return false
+    }
+
+    /// Removes the topic's streams that have already ended, ahead of their own removal, and returns the
+    /// unsubscription to send when that leaves the topic without streams.
+    private func purgeTerminated(_ topic: Topic) -> String? {
+        let ended = terminated.withLockedValue { $0 }
+        for id in subscribers[topic] ?? [] where ended.contains(id) {
+            consumers[id] = nil
+            // Its removal, still to arrive, is then ignored.
+            finishing.insert(id)
+            if leave(id, topic: topic), let request = requests.removeValue(forKey: topic) {
+                return Self.message("unsubscribe", request)
+            }
+        }
+        return nil
     }
 
     /// Ends a stream from the connection's side; its own end, which follows, is then ignored.
@@ -224,8 +301,9 @@ actor StreamConnection {
             id: id, session: session,
             receiver: Task { [weak self] in
                 for await frame in session.frames {
+                    guard let routed = await Self.route(frame) else { continue }
                     guard let self else { return }
-                    await self.receive(frame, on: id)
+                    await self.receive(routed.data, about: routed.topic, on: id)
                 }
                 await self?.closed(id)
             },
@@ -254,31 +332,34 @@ actor StreamConnection {
 
     // MARK: Receiving
 
-    private func receive(_ frame: String, on id: UInt64) {
-        guard connection?.id == id else { return }
-        let data = Data(frame.utf8)
-        guard let topic = Self.topic(of: data), let ids = subscribers[topic] else { return }
+    private func receive(_ data: Data, about topic: Topic, on id: UInt64) {
+        guard connection?.id == id, let ids = subscribers[topic] else { return }
         for id in ids { consumers[id]?.deliver(data) }
     }
 
-    /// The topic of a push, or `nil` for a frame no stream reads: a pong, an error, a channel the client
-    /// doesn't route, or text that isn't JSON.
+    /// The frame's bytes and topic, read off the connection's actor, or `nil` for a frame no stream reads.
+    @concurrent
+    private static func route(_ frame: String) async -> (data: Data, topic: Topic)? {
+        let data = Data(frame.utf8)
+        return topic(of: data).map { (data, $0) }
+    }
+
+    /// The topic of a push, from the push alone, or `nil` for a frame no stream reads: a pong, an error,
+    /// an acknowledgement, a channel the client doesn't route, an empty trades push, or text that isn't
+    /// JSON.
     static func topic(of frame: Data) -> Topic? {
-        struct Header: Decodable {
-            let channel: String
+        guard let push = try? JSONDecoder().decode(RoutingPush.self, from: frame), let fields = push.data else {
+            return nil
         }
-        guard let header = try? JSONDecoder().decode(Header.self, from: frame) else { return nil }
-        switch header.channel {
+        switch push.channel {
         case "allMids":
             // A push from the first perp DEX carries no `dex`.
-            struct Push: Decodable {
-                struct Mids: Decodable {
-                    let dex: String?
-                }
-                let data: Mids
-            }
-            guard let push = try? JSONDecoder().decode(Push.self, from: frame) else { return nil }
-            return Topic(channel: "allMids", key: push.data.dex ?? "")
+            return Topic(channel: push.channel, key: fields.dex ?? "")
+        case "l2Book", "bbo", "trades", "activeAssetCtx":
+            return fields.coin.map { Topic(channel: push.channel, key: $0) }
+        case "candle":
+            guard let coin = fields.s, let interval = fields.i else { return nil }
+            return Topic(channel: push.channel, key: "\(coin),\(interval)")
         default:
             return nil
         }
@@ -292,6 +373,50 @@ actor StreamConnection {
     }
 
     // MARK: Wire
+
+    /// The fields a push is routed by: `{"channel": …, "data": …}`, where `data` is an object or, for
+    /// trades and a candle array, a list whose first item carries them.
+    private struct RoutingPush: Decodable {
+        struct Fields: Decodable {
+            let coin: String?
+            let dex: String?
+            let s: String?
+            let i: String?
+
+            init(from decoder: any Decoder) throws {
+                if var list = try? decoder.unkeyedContainer() {
+                    guard !list.isAtEnd else {
+                        (coin, dex, s, i) = (nil, nil, nil, nil)
+                        return
+                    }
+                    self = try list.decode(Fields.self)
+                    return
+                }
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                coin = try? container.decodeIfPresent(String.self, forKey: .coin)
+                dex = try? container.decodeIfPresent(String.self, forKey: .dex)
+                s = try? container.decodeIfPresent(String.self, forKey: .s)
+                i = try? container.decodeIfPresent(String.self, forKey: .i)
+            }
+
+            private enum CodingKeys: String, CodingKey {
+                case coin, dex, s, i
+            }
+        }
+
+        let channel: String
+        let data: Fields?
+
+        private enum CodingKeys: String, CodingKey {
+            case channel, data
+        }
+
+        init(from decoder: any Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            channel = try container.decode(String.self, forKey: .channel)
+            data = try? container.decodeIfPresent(Fields.self, forKey: .data)
+        }
+    }
 
     /// `{"method": …, "subscription": …}`.
     private static func message(_ method: String, _ subscription: ActionValue) -> String {
