@@ -31,6 +31,8 @@ struct AsyncHTTPClientTransport: HTTPTransport {
             }
             return TransportResponse(status: Int(response.status.code), body: Data(body.readableBytesView))
         } catch {
+            // AsyncHTTPClient can fail a cancelled request with its own error first.
+            if Task.isCancelled { throw CancellationError() }
             throw Self.clientError(for: error)
         }
     }
@@ -44,6 +46,8 @@ struct AsyncHTTPClientTransport: HTTPTransport {
         switch error {
         case is CancellationError:
             error
+        case let error as HTTPClientError where error == .cancelled:
+            CancellationError()
         case let error as HTTPClientError where timeouts.contains(error):
             Hyperliquid.ClientError(.timedOut, underlyingError: error)
         case is NIOTooManyBytesError:
@@ -83,11 +87,13 @@ private func withDeadline<Result: Sendable>(
 
 extension HTTPClient {
     /// The client every `Hyperliquid.Client` sends with: the shared client's settings without a read
-    /// timeout, so a request's only limit is the configured timeout. Connecting still gives up after
-    /// AsyncHTTPClient's 10 seconds.
+    /// timeout, so a request's only limit is the configured timeout. A connection that can't be made
+    /// fails within AsyncHTTPClient's 10-second connect limit instead of being tried again until the
+    /// request's deadline, which without a timeout never comes.
     static let hyperliquid: HTTPClient = {
         var configuration = HTTPClient.Configuration.singletonConfiguration
         configuration.timeout = .init(connect: nil, read: nil)
+        configuration.connectionPool.retryConnectionEstablishment = false
         return HTTPClient(eventLoopGroup: HTTPClient.defaultEventLoopGroup, configuration: configuration)
     }()
 }

@@ -53,11 +53,11 @@ extension HyperliquidKitTests {
             }
         }
 
-        // While nothing listens, the client keeps trying to connect until the timeout passes.
-        @Test func `a refused connection throws connection failed`() async throws {
+        // Without a timeout, a connection that can't be made still fails, within the 10-second connect limit.
+        @Test func `a refused connection throws connection failed, even without a timeout`() async throws {
             let url = try await LoopbackServer.unusedURL()
             await #expect {
-                try await market(url, timeout: .seconds(1)).perpDexs()
+                try await market(url, timeout: nil).perpDexs()
             } throws: { error in
                 (error as? Hyperliquid.ClientError)?.reason == .connectionFailed
             }

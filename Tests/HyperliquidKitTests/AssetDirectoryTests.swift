@@ -39,6 +39,19 @@ extension HyperliquidKitTests {
             #expect(await transport.requests.count == 1)
         }
 
+        @Test func `a cancelled lookup returns at once, and the load it shares goes on for the others`() async throws {
+            let transport = HeldTransport(answer: Self.meta)
+            let directory = AssetDirectory(info: .test(transport))
+            let cancelled = Task { try await directory.asset(for: "BTC") }
+            let waiting = Task { try await directory.asset(for: "ETH") }
+            try await eventually { await transport.held ? true : nil }
+            cancelled.cancel()
+            await #expect(throws: CancellationError.self) { try await cancelled.value }
+            await transport.release()
+            #expect(try await waiting.value.id == 1)
+            #expect(await transport.requests == 1)
+        }
+
         @Test func `a failed perp DEX list is tried again on the next lookup`() async throws {
             let transport = FakeTransport(responses: [
                 .init(status: 500, body: Data("null".utf8)), .init(status: 200, body: Data(Self.perpDexs.utf8)),
@@ -86,5 +99,31 @@ extension HyperliquidKitTests {
             await #expect(throws: HyperliquidError.self) { try await directory.asset(for: "BTC") }
             #expect(try await directory.asset(for: "BTC").id == 0)
         }
+    }
+}
+
+/// Holds every request until `release()`, then answers each with `answer`.
+private actor HeldTransport: HTTPTransport {
+    private let answer: String
+    private var waiting: [CheckedContinuation<Void, Never>] = []
+    private var released = false
+    private(set) var requests = 0
+
+    init(answer: String) {
+        self.answer = answer
+    }
+
+    var held: Bool { !waiting.isEmpty }
+
+    func send(_ request: TransportRequest) async throws -> TransportResponse {
+        requests += 1
+        if !released { await withCheckedContinuation { waiting.append($0) } }
+        return .json(answer)
+    }
+
+    func release() {
+        released = true
+        for continuation in waiting { continuation.resume() }
+        waiting = []
     }
 }

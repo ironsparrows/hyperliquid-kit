@@ -57,15 +57,16 @@ actor AssetDirectory {
                 .universe
             return Universe(
                 entries: entries,
-                positions: Dictionary(entries.enumerated().map { ($1.name, $0) }) { first, _ in first }
+                positions: Dictionary(entries.enumerated().map { ($1.name, $0) }) { _, last in last }
             )
         }
         universes[dex] = task
         do {
-            return try await task.value
+            return try await task.valueUnlessCancelled
         } catch {
             // Forget a failed load so the next lookup tries again, unless another caller already did.
-            if universes[dex] == task { universes[dex] = nil }
+            // A waiter cancelled while the load runs leaves it for the others.
+            if !(error is CancellationError), universes[dex] == task { universes[dex] = nil }
             throw error
         }
     }
@@ -80,9 +81,9 @@ actor AssetDirectory {
         dexIndexes = task
         let indexes: [Hyperliquid.PerpDex: Int]
         do {
-            indexes = try await task.value
+            indexes = try await task.valueUnlessCancelled
         } catch {
-            if dexIndexes == task { dexIndexes = nil }
+            if !(error is CancellationError), dexIndexes == task { dexIndexes = nil }
             throw error
         }
         guard let index = indexes[dex] else {
