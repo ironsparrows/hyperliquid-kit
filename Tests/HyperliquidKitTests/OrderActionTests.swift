@@ -161,11 +161,12 @@ extension HyperliquidKitTests {
             #expect(try await Self.exchangeBody(transport).contains(#""s":"0.12345678""#))
         }
 
-        @Test func `a number within 1e-12 of 8 decimals is rounded, as from a floating-point literal`() async throws {
+        @Test(arguments: [(Decimal(0.001), "0.001"), (Decimal(60000.1), "60000.1"), (Decimal(3500.3), "3500.3")])
+        func `a floating-point literal is sent as written`(size: Decimal, expected: String) async throws {
             let transport = Self.transport(Self.meta, Self.resting)
-            // A `Decimal` made from the `Double` 0.001 is 0.001000000000000000020816…
-            _ = try await OrderRequests.test(transport).place([.limit(.buy, "BTC", price: 60000, size: Decimal(0.001))])
-            #expect(try await Self.exchangeBody(transport).contains(#""s":"0.001""#))
+            // A `Decimal` made from a `Double` carries its binary error, such as 60000.0999999999985…
+            _ = try await OrderRequests.test(transport).place([.limit(.buy, "BTC", price: 1, size: size)])
+            #expect(try await Self.exchangeBody(transport).contains(#""s":"\#(expected)""#))
         }
 
         @Test func `a batch rejected with one error throws it, and another count of statuses is unexpected`() async {

@@ -19,7 +19,8 @@ func wireNumber(_ value: Decimal, _ field: String) throws(Hyperliquid.ClientErro
 ///   integer's range, or NaN, before anything is sent.
 func microdollars(_ amount: Decimal, _ field: String) throws(Hyperliquid.ClientError) -> Int64 {
     let millionths = try rounded(
-        amount * 1_000_000, field, decimals: 0, tolerance: Decimal(sign: .plus, exponent: -3, significand: 1)
+        amount * 1_000_000, field, decimals: 0, tolerance: Decimal(sign: .plus, exponent: -3, significand: 1),
+        asDouble: NSDecimalNumber(decimal: amount).doubleValue * 1_000_000
     )
     guard let integer = Int64(millionths.wireString) else {
         throw Hyperliquid.ClientError(.invalidRequest, message: "The \(field) \(amount.wireString) is too large to send")
@@ -28,8 +29,9 @@ func microdollars(_ amount: Decimal, _ field: String) throws(Hyperliquid.ClientE
 }
 
 /// `value` rounded to `decimals`, half away from zero, after checking it is a number that rounding
-/// moves by less than `tolerance`.
-private func rounded(_ value: Decimal, _ field: String, decimals: Int, tolerance: Decimal)
+/// moves by less than `tolerance`, either exactly or, as the Python SDK compares, as a `Double`: a
+/// floating-point literal reaches `Decimal` through `Double`, carrying its binary error.
+private func rounded(_ value: Decimal, _ field: String, decimals: Int, tolerance: Decimal, asDouble: Double? = nil)
     throws(Hyperliquid.ClientError) -> Decimal
 {
     guard !value.isNaN else {
@@ -38,7 +40,10 @@ private func rounded(_ value: Decimal, _ field: String, decimals: Int, tolerance
     var exact = value
     var result = Decimal()
     NSDecimalRound(&result, &exact, decimals, .plain)
-    guard abs(result - value) < tolerance else {
+    let double = asDouble ?? NSDecimalNumber(decimal: value).doubleValue
+    let roundedDouble = NSDecimalNumber(decimal: result).doubleValue
+    let movesDouble = abs(roundedDouble - double) >= NSDecimalNumber(decimal: tolerance).doubleValue
+    guard abs(result - value) < tolerance || !movesDouble else {
         throw Hyperliquid.ClientError(
             .invalidRequest,
             message: "The \(field) \(value.wireString) has more than \(decimals) decimals; rounding would change it"

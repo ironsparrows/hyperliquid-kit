@@ -75,7 +75,8 @@ extension Hyperliquid.Client {
         public var network: Hyperliquid.Network
         /// How long a request may take, from sending it to the last byte of the response. `nil`, the
         /// default, sets no limit beyond 10 seconds to connect. A request that takes longer throws
-        /// ``Hyperliquid/ClientError/Reason/timedOut``.
+        /// ``Hyperliquid/ClientError/Reason/timedOut``, or ``Hyperliquid/ClientError/Reason/connectionFailed``
+        /// when it was still waiting for a connection that couldn't be made.
         public var timeout: Duration?
         /// The sub-account or vault that actions trade for. The signer must be its owner's key or one of
         /// the owner's API wallets.

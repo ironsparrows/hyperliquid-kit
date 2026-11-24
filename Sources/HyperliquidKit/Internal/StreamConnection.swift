@@ -6,8 +6,9 @@ import NIOConcurrencyHelpers
 ///
 /// It connects on the first subscription, pings every 50 seconds, sends a subscription when its first
 /// stream arrives and an unsubscription when its last one leaves, and routes each push to the streams
-/// of its topic. A closed connection ends every stream with `connectionClosed`; nothing reconnects,
-/// and the next subscription opens a new connection.
+/// of its topic. A closed connection ends every stream subscribed on it with `connectionClosed`;
+/// nothing reconnects, and the next subscription, or a stream still being checked, opens a new
+/// connection.
 actor StreamConnection {
     /// What a push is about: its channel and the field that tells its subscriptions apart, such as
     /// `allMids` and the perp DEX.
@@ -214,14 +215,17 @@ actor StreamConnection {
             if let dex = subscription.dex { try await directory.check(dex) }
             // The stream may have ended, or the connection been closed, during the checks.
             guard consumers[id] != nil else { return }
-            let session = try await openSession()
+            var session = try await openSession()
             guard consumers[id] != nil else { return }
             let topic = subscription.topic
             if requests[topic] != nil {
                 // Streams that ended but whose removal is still on its way don't hold the topic: a stream
                 // that replaces one subscribes afresh and gets its own snapshot.
                 if let unsubscribe = purgeTerminated(topic) {
+                    let sentOn = connection?.id
                     try? await session.send(unsubscribe)
+                    // The connection may have closed meanwhile: subscribe on its replacement.
+                    if connection?.id != sentOn { session = try await openSession() }
                 }
                 guard consumers[id] != nil else { return }
             }

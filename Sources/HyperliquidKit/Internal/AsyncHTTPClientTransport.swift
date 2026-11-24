@@ -23,7 +23,7 @@ struct AsyncHTTPClientTransport: HTTPTransport {
             // time that is left.
             let deadline = request.timeout.map { ContinuousClock.now + $0 }
             // Without a deadline, a connection that can't be made must fail rather than be tried again
-            // forever; with one, trying again until the deadline rides out a brief outage.
+            // forever; with one, trying again for up to 10 seconds rides out a brief outage.
             let client: HTTPClient = request.timeout == nil ? .hyperliquidWithoutRetries : .hyperliquid
             let response = try await client.execute(
                 outgoing, deadline: request.timeout.map { .now() + TimeAmount($0) } ?? .distantFuture
@@ -88,7 +88,7 @@ private func withDeadline<Result: Sendable>(
 extension HTTPClient {
     /// The client for requests with a timeout: the shared client's settings without a read timeout, so
     /// a request's only limit is the configured timeout. A connection that can't be made is tried again
-    /// until that deadline.
+    /// until that deadline or for 10 seconds, whichever comes first.
     static let hyperliquid = HTTPClient(retryingConnections: true)
 
     /// The client for requests without a timeout: a connection that can't be made fails within

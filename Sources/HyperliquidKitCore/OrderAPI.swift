@@ -55,8 +55,9 @@ extension Hyperliquid {
 
         /// Places orders, signed by the client's signer. (`order`)
         ///
-        /// Each order gets its own result: a rejected order doesn't throw. The call throws only when
-        /// Hyperliquid rejects the whole batch. An order whose price, size or trigger price has more
+        /// Each order gets its own result: a rejected order doesn't throw. The call throws
+        /// `actionRejected` when Hyperliquid rejects the whole batch, and `unexpectedResponse` when its
+        /// answer can't be matched to the orders. An order whose price, size or trigger price has more
         /// than 8 decimals is rounded to 8 when that moves it by less than 1e-12, which absorbs a
         /// floating-point literal's error, and otherwise throws ``ClientError/Reason/invalidRequest``
         /// before anything is sent. A market order reads its coin's mid price first, once per perp DEX,

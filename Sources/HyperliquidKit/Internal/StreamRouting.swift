@@ -21,8 +21,8 @@ extension StreamConnection {
     /// Where a push goes, from the push alone, and the push its streams read: the frame itself, or for
     /// a compressed order book diff `{"data": {"u": …}}` holding the inflated diff, which routing had
     /// to inflate to read its coin. `nil` for a frame no stream reads: a pong, an error, an
-    /// acknowledgement, a channel the client doesn't route, an empty trades push, or text that isn't
-    /// JSON.
+    /// acknowledgement, a channel the client doesn't route, an empty trades push, an order book update
+    /// of an unknown shape, or text that isn't JSON.
     ///
     /// Account pushes are keyed by their lower-cased `user`, except order updates, events (channel
     /// `user`) and notifications, which carry none and share one topic per channel. Order book diffs

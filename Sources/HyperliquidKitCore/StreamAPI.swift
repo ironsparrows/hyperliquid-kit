@@ -37,7 +37,9 @@ extension Hyperliquid {
     /// for a slow reader; streams of events, such as trades, candle updates and fills, keep every
     /// push in order. Streams that start with a snapshot of recent events yield a ``Batch`` per push,
     /// which says whether it is that snapshot. Only the stream that starts a subscription gets its
-    /// snapshot; a stream that joins one already streaming gets the pushes from then on.
+    /// snapshot; a stream that joins one already streaming gets the pushes from then on. A stream that
+    /// subscribes again right after another of its kind ended can first get pushes sent for the earlier
+    /// subscription, such as its snapshot.
     public protocol StreamAPI: Sendable {
         /// The mid price of every market on a perp DEX; on the first perp DEX, markets that aren't
         /// perpetuals too. (`allMids`)

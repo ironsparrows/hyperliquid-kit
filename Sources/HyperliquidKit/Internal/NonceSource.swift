@@ -28,8 +28,11 @@ actor NonceSource {
         return nonce
     }
 
-    /// Records a nonce the app chose, such as one it spends, so the signer's next nonce is higher.
+    /// Records a nonce the app chose, such as one it spends, so the signer's next nonce is higher. A
+    /// nonce more than a day ahead, which Hyperliquid rejects, isn't recorded, so it can't push later
+    /// nonces out of the range Hyperliquid accepts.
     func record(_ nonce: UInt64, for signer: Hyperliquid.Address, on network: Hyperliquid.Network) -> UInt64 {
+        guard nonce <= now() + 86_400_000 else { return nonce }
         let key = Key(signer: signer, network: network)
         last[key] = max(last[key] ?? 0, nonce)
         return nonce
