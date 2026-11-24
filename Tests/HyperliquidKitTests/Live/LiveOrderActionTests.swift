@@ -3,7 +3,7 @@ import HyperliquidKit
 import HyperliquidKitTestSupport
 import Testing
 
-extension HyperliquidKitTests {
+extension HyperliquidKitTests.LiveTradingTests {
     // Places a real order on mainnet with the account's API wallet: a resting buy of about $11 of BTC
     // 10 % under the mid price, then modifies and cancels it.
     @Suite(

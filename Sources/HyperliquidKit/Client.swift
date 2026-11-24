@@ -20,9 +20,11 @@ extension Hyperliquid {
         /// - Parameters:
         ///   - account: The account that account, position, order and TWAP reads and account streams use
         ///     when they are given none. Pass the account's own address, not an API wallet's: an API
-        ///     wallet's address reads as an empty account. Defaults to the signer's address.
+        ///     wallet's address reads as an empty account. Defaults to the signer's address; a
+        ///     ``Configuration/vaultAddress`` replaces it, even when given.
         ///   - signer: Signs actions: the account's own key, or an API wallet's. Without one, actions throw
         ///     ``ClientError/Reason/missingSigner``.
+        ///   - configuration: The network, the request timeout and the vault actions trade for.
         ///
         /// With ``Configuration/vaultAddress`` set, reads and streams given no account use the vault's
         /// address.

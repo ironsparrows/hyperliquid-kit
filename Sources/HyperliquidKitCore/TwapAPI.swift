@@ -32,15 +32,20 @@ extension Hyperliquid {
         /// a whole number of minutes, or a size with more than 8 decimals, throws
         /// ``ClientError/Reason/invalidRequest`` before anything is sent.
         ///
-        /// - Parameter expiresAfter: When set, Hyperliquid rejects the action if it arrives after this
-        ///   time. An action rejected this way counts five times against the address's request limit.
+        /// - Parameters:
+        ///   - twap: The TWAP order.
+        ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        ///     An action rejected this way counts five times against the address's request limit.
         func place(_ twap: TwapRequest, expiresAfter: Date?) async throws -> TwapPlacementResult
 
         /// Cancels a running TWAP order. (`twapCancel`)
         ///
         /// A TWAP that can't be canceled doesn't throw: its result carries Hyperliquid's reason.
         ///
-        /// - Parameter expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        /// - Parameters:
+        ///   - id: The TWAP order's ID.
+        ///   - coin: The perpetual it trades.
+        ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
         func cancel(_ id: TwapID, coin: Coin, expiresAfter: Date?) async throws -> CancelResult
     }
 }

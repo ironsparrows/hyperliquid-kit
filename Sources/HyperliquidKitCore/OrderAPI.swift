@@ -34,15 +34,21 @@ extension Hyperliquid {
 
         /// The account's most recent fills, at most 2000. (`userFills`)
         ///
-        /// - Parameter aggregateByTime: Combines the partial fills of a crossing order that matched
-        ///   several resting orders.
+        /// - Parameters:
+        ///   - aggregateByTime: Combines the partial fills of a crossing order that matched several
+        ///     resting orders.
+        ///   - user: The account; `nil` for the client's.
         func fills(aggregateByTime: Bool, for user: Address?) async throws -> [Fill]
 
         /// The account's fills from `start` to `end`, or to now when `end` is `nil`. A response holds at
         /// most 2000 fills, and only the 10000 most recent are available. (`userFillsByTime`)
         ///
-        /// - Parameter aggregateByTime: Combines the partial fills of a crossing order that matched
-        ///   several resting orders.
+        /// - Parameters:
+        ///   - start: The earliest fill time.
+        ///   - end: The latest fill time, or `nil` for now.
+        ///   - aggregateByTime: Combines the partial fills of a crossing order that matched several
+        ///     resting orders.
+        ///   - user: The account; `nil` for the client's.
         func fills(from start: Date, to end: Date?, aggregateByTime: Bool, for user: Address?) async throws -> [Fill]
 
         // MARK: Actions
@@ -56,8 +62,11 @@ extension Hyperliquid {
         /// and throws ``ClientError/Reason/noMidPrice`` without one, or
         /// ``ClientError/Reason/invalidRequest`` for slippage below 0 or at 100 % or more.
         ///
-        /// - Parameter expiresAfter: When set, Hyperliquid rejects the action if it arrives after this
-        ///   time. An action rejected this way counts five times against the address's request limit.
+        /// - Parameters:
+        ///   - orders: The orders, sent as one action.
+        ///   - grouping: How the orders relate, such as ``Grouping/standalone``.
+        ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        ///     An action rejected this way counts five times against the address's request limit.
         func place(_ orders: [OrderRequest], grouping: Grouping, expiresAfter: Date?) async throws -> [PlacementResult]
 
         /// Closes the account's position in `coin` with a reduce-only market order, or does nothing and
@@ -66,9 +75,11 @@ extension Hyperliquid {
         /// The position is read for the client's account: its vault, else its account, else its signer.
         ///
         /// - Parameters:
+        ///   - coin: The perpetual whose position to close.
         ///   - size: How much to close; `nil` or zero closes the whole position.
         ///   - price: The price the slippage applies to; `nil` or zero uses the mid price.
         ///   - slippage: As for ``OrderRequest/market(_:_:size:price:slippage:clientID:)``.
+        ///   - clientID: The app's ID for the closing order.
         ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
         func close(
             _ coin: Coin, size: Decimal?, price: Decimal?, slippage: Slippage, clientID: ClientOrderID?, expiresAfter: Date?
@@ -77,6 +88,7 @@ extension Hyperliquid {
         /// Cancels orders by Hyperliquid's ID. (`cancel`)
         ///
         /// - Parameters:
+        ///   - orders: The orders, each with its coin; each gets its own result.
         ///   - fast: Hyperliquid rejects a fast cancel of a trigger order.
         ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
         func cancel(_ orders: [OrderReference], fast: Bool, expiresAfter: Date?) async throws -> [CancelResult]
@@ -84,6 +96,7 @@ extension Hyperliquid {
         /// Cancels orders by the app's client order ID. (`cancelByCloid`)
         ///
         /// - Parameters:
+        ///   - orders: The orders, each with its coin; each gets its own result.
         ///   - fast: Hyperliquid rejects a fast cancel of a trigger order.
         ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
         func cancel(clientIDs orders: [ClientOrderReference], fast: Bool, expiresAfter: Date?) async throws
@@ -95,6 +108,7 @@ extension Hyperliquid {
         /// order, throws ``ClientError/Reason/invalidRequest`` before anything is sent.
         ///
         /// - Parameters:
+        ///   - changes: Each order and its new version.
         ///   - alwaysPlace: Places the new version even when the cancel fails. Without it, the new
         ///     version must be a resting limit order (add-liquidity-only, or good-til-canceled that
         ///     wouldn't match at once, which Hyperliquid then rests as add-liquidity-only).
@@ -104,7 +118,9 @@ extension Hyperliquid {
         /// Cancels all of the account's orders at `deadline`, at least 5 seconds ahead: a dead man's
         /// switch. Hyperliquid triggers it at most 10 times a day. (`scheduleCancel`)
         ///
-        /// - Parameter expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        /// - Parameters:
+        ///   - deadline: When to cancel, at least 5 seconds ahead.
+        ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
         func scheduleCancelAll(at deadline: Date, expiresAfter: Date?) async throws
 
         /// Removes the scheduled cancel. (`scheduleCancel` without a time)
@@ -115,7 +131,9 @@ extension Hyperliquid {
         /// Marks `nonce` as used, so an action sent with it can't execute: the way to stop an action
         /// whose outcome is unknown after a timeout. (`noop`)
         ///
-        /// - Parameter expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        /// - Parameters:
+        ///   - nonce: The nonce of the action to stop, from the error it threw.
+        ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
         func invalidate(nonce: UInt64, expiresAfter: Date?) async throws
     }
 }

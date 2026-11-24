@@ -3,7 +3,7 @@ import HyperliquidKit
 import HyperliquidKitTestSupport
 import Testing
 
-extension HyperliquidKitTests {
+extension HyperliquidKitTests.LiveTradingTests {
     // Trades on mainnet with the account's API wallet. Sets BTC to 10× isolated and back; opens about
     // $11 of BTC, adds and removes $1 of margin and tops it up to 5×, then closes that size; starts a
     // $110 BTC TWAP over 7 days and cancels it. A slice that filled before the cancel stays open.

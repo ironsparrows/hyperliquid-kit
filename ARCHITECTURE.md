@@ -49,6 +49,7 @@ The three deflate-compressed streams (`l2` order book diffs, `fastAssetCtxs` and
 - In `HyperliquidKitCore` and `HyperliquidKit`, a file with no `public` declaration goes in `Internal/`, so a module's root shows what apps can use.
 - A file owns one responsibility and is named after its primary type. Wire types live, `private`, in the file that reads or writes them.
 - Tests mirror the sources: `HyperliquidKitCoreTests` for the contract, `HyperliquidKitTests` for the client. `HyperliquidKitTestSupport` (in `Tests/`, not a product) holds the live test gate (`areLiveTestsEnabled`, `LiveTestSettings`) and the `.live` tag. In `HyperliquidKitTests`, `Loopback/` sends real requests to a local server, `Live/` calls Hyperliquid's mainnet, and `Support/` holds fakes and helpers. `HyperliquidKitCoreTests/Fixtures/` holds responses and pushes recorded from Hyperliquid, byte for byte except account addresses and hashes, which are swapped for fakes. `HyperliquidKitTests/Fixtures/` holds recorded streams of compressed pushes, one frame per line, and the `meta` responses that name their positions.
+- `HyperliquidKit.docc` holds the documentation's landing page and articles; `HyperliquidKitCore.docc` holds the landing page of `HyperliquidKitCore` alone. The code of their examples and the README's lives in `Tests/HyperliquidKitTests/DocumentationExamples.swift`, compiled but never run; `DocumentationExampleTests` checks each example matches it.
 
 Files of one kind use the same `// MARK: -` sections in the same order; a section that doesn't apply is left out:
 

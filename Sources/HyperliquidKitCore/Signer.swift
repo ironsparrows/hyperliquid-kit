@@ -3,8 +3,8 @@ public import Foundation
 extension Hyperliquid {
     /// Signs actions for an account: with the account's own key, or with an API wallet's.
     ///
-    /// ``PrivateKeySigner`` signs with a key in memory. Conform your own type to sign elsewhere, such
-    /// as in a hardware wallet or a remote signing service.
+    /// `PrivateKeySigner`, in `HyperliquidKit`, signs with a key in memory. Conform your own type to
+    /// sign elsewhere, such as in a hardware wallet or a remote signing service.
     public protocol Signer: Sendable {
         /// The address of the key that signs. Hyperliquid recovers it from each signature.
         var address: Address { get }

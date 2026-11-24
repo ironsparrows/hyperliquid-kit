@@ -3,7 +3,7 @@ import HyperliquidKit
 import HyperliquidKitTestSupport
 import Testing
 
-extension HyperliquidKitTests {
+extension HyperliquidKitTests.LiveTradingTests {
     // Trades on mainnet with the account's API wallet: streams the account, buys about $11 of BTC with
     // a market order, then closes that size, and checks the pushes decode.
     @Suite(

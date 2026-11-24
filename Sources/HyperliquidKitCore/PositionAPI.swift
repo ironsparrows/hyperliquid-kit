@@ -35,8 +35,11 @@ extension Hyperliquid {
         /// A mode other than ``MarginMode/cross`` or ``MarginMode/isolated`` throws
         /// ``ClientError/Reason/invalidRequest`` before anything is sent.
         ///
-        /// - Parameter expiresAfter: When set, Hyperliquid rejects the action if it arrives after this
-        ///   time. An action rejected this way counts five times against the address's request limit.
+        /// - Parameters:
+        ///   - leverage: The leverage and its margin mode.
+        ///   - coin: The perpetual.
+        ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        ///     An action rejected this way counts five times against the address's request limit.
         func setLeverage(_ leverage: Leverage, for coin: Coin, expiresAfter: Date?) async throws
 
         /// Adds margin to an isolated position, or removes it when `amount` is negative, in USD.
@@ -45,7 +48,10 @@ extension Hyperliquid {
         /// An amount with more than 6 decimals, or one too large to send, throws
         /// ``ClientError/Reason/invalidRequest`` before anything is sent: it is rejected, not rounded.
         ///
-        /// - Parameter expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        /// - Parameters:
+        ///   - coin: The perpetual of the isolated position.
+        ///   - amount: The USD to add, or to remove when negative.
+        ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
         func adjustMargin(_ coin: Coin, by amount: Decimal, expiresAfter: Date?) async throws
 
         /// Changes the position's isolated margin to target `leverage` instead of a USD amount.
@@ -54,7 +60,10 @@ extension Hyperliquid {
         /// A leverage with more than 8 decimals throws ``ClientError/Reason/invalidRequest`` before
         /// anything is sent.
         ///
-        /// - Parameter expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        /// - Parameters:
+        ///   - coin: The perpetual of the isolated position.
+        ///   - leverage: The leverage the margin should give.
+        ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
         func topUpMargin(_ coin: Coin, toLeverage leverage: Decimal, expiresAfter: Date?) async throws
     }
 }
