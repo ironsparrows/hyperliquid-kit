@@ -205,11 +205,12 @@ extension HyperliquidKitCoreTests {
         @Test func `recorded ledger updates decode their transfers and spot genesis`() throws {
             let updates = try decoder.decode([Hyperliquid.LedgerUpdate].self, from: Fixture.data("userNonFundingLedgerUpdates"))
             #expect(updates.count == 8)
-            guard case .internalTransfer(let usdc, _, let destination, let fee) = updates.first?.change else {
+            guard case .internalTransfer(let usdc, let user, let destination, let fee) = updates.first?.change else {
                 Issue.record("Expected an internal transfer, got \(String(describing: updates.first?.change))")
                 return
             }
-            #expect(usdc == 1 && fee == 0 && destination == "0x0000000000000000000000000000000000000000")
+            #expect(usdc == 1 && fee == 0 && user == "0x0000000000000000000000000000000000000001")
+            #expect(destination == "0x0000000000000000000000000000000000000000")
             guard case .spotTransfer(let transfer) = updates[5].change else {
                 Issue.record("Expected a spot transfer, got \(updates[5].change)")
                 return
@@ -218,10 +219,22 @@ extension HyperliquidKitCoreTests {
             #expect(updates.last?.change == .spotGenesis(token: "LICK", amount: Decimal(string: "1.18985")!))
         }
 
+        @Test func `a documented ledger change missing a field throws`() {
+            #expect(throws: DecodingError.self) {
+                try decode(
+                    Hyperliquid.LedgerUpdate.self,
+                    #"{"time":1,"hash":"0x0000000000000000000000000000000000000000000000000000000000000001","delta":{"type":"internalTransfer","usdc":"1.0"}}"#
+                )
+            }
+        }
+
         /// Each kind the websocket subscriptions page documents, with fake addresses.
         @Test(arguments: [
             (#"{"type":"deposit","usdc":"2703997.4500000002"}"#, Hyperliquid.LedgerUpdate.Change.deposit(usdc: Decimal(string: "2703997.4500000002")!)),
             (#"{"type":"withdraw","usdc":"10.5","nonce":1700000000000,"fee":"1.0"}"#, .withdraw(usdc: Decimal(string: "10.5")!, nonce: 1_700_000_000_000, fee: 1)),
+            (#"{"type":"withdraw","usdc":"10.5","nonce":null,"fee":"1.0"}"#, .withdraw(usdc: Decimal(string: "10.5")!, nonce: nil, fee: 1)),
+            (#"{"type":"liquidation","accountValue":"20.0","leverageType":"Cross","liquidatedPositions":[{"coin":"BTC","szi":"0.1"},{"coin":"ETH","szi":"-2.0"}]}"#,
+             .liquidation(.init(accountValue: 20, marginMode: .cross, positions: [.init(coin: "BTC", size: Decimal(string: "0.1")!), .init(coin: "ETH", size: -2)]))),
             (#"{"type":"internalTransfer","usdc":"5.0","user":"0x00000000000000000000000000000000000000a1","destination":"0x00000000000000000000000000000000000000b2","fee":"1.0"}"#,
              .internalTransfer(usdc: 5, user: "0x00000000000000000000000000000000000000a1", destination: "0x00000000000000000000000000000000000000b2", fee: 1)),
             (#"{"type":"subAccountTransfer","usdc":"2.0","user":"0x00000000000000000000000000000000000000a1","destination":"0x00000000000000000000000000000000000000b2"}"#,

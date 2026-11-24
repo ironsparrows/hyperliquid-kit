@@ -224,6 +224,7 @@ actor StreamConnection {
                 if let unsubscribe = purgeTerminated(topic) {
                     let sentOn = connection?.id
                     try? await session.send(unsubscribe)
+                    guard consumers[id] != nil else { return }
                     // The connection may have closed meanwhile: subscribe on its replacement.
                     if connection?.id != sentOn { session = try await openSession() }
                 }

@@ -24,6 +24,7 @@ extension HyperliquidKitCoreTests {
             (Decimal(sign: .plus, exponent: -2, significand: 150), "1.5"),
             (Decimal(sign: .plus, exponent: -3, significand: 100_000), "100"),
             (Decimal(string: "2.50")! * 2, "5"),
+            (Decimal(string: "-0.00")!, "0"),
         ])
         func `a decimal built without compacting is written without trailing zeros`(value: Decimal, expected: String) {
             #expect(value.wireString == expected)

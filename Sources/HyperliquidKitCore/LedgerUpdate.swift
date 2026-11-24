@@ -4,9 +4,10 @@ extension Hyperliquid {
     /// A change to an account's balances other than funding: a deposit, a transfer, a withdrawal, a
     /// liquidation and so on.
     ///
-    /// Each kind carries the fields Hyperliquid's websocket subscriptions page documents for it
-    /// (`WsLedgerUpdate`), which reads and streams share. A kind this type doesn't model arrives as
-    /// ``Change/unknown(kind:)``, so it is never lost.
+    /// The ledger read and the ledger stream both return this type. Each kind carries the fields
+    /// Hyperliquid's websocket subscriptions page documents for it (`WsLedgerUpdate`). A kind this
+    /// type doesn't model arrives as ``Change/unknown(kind:)``, so it is never lost; a documented
+    /// kind whose fields don't read throws a `DecodingError`.
     public struct LedgerUpdate: Hashable, Sendable {
         public let time: Date
         public let hash: TransactionHash
@@ -21,22 +22,24 @@ extension Hyperliquid {
 }
 
 extension Hyperliquid.LedgerUpdate {
-    /// What changed. Amounts are as Hyperliquid sends them; on a transfer, `user` sent and
-    /// `destination` received.
+    /// What changed. Amounts are as Hyperliquid sends them; on an internal or spot transfer, `user`
+    /// sent and `destination` received.
     ///
     /// Later versions of this type may model more kinds, so give a `switch` over it a `default`.
     public enum Change: Hashable, Sendable {
         case deposit(usdc: Decimal)
-        case withdraw(usdc: Decimal, nonce: UInt64, fee: Decimal)
+        /// A withdrawal, with its action's nonce when Hyperliquid sends one, and the fee it paid.
+        case withdraw(usdc: Decimal, nonce: UInt64?, fee: Decimal)
         /// USDC sent between accounts.
         case internalTransfer(usdc: Decimal, user: Hyperliquid.Address, destination: Hyperliquid.Address, fee: Decimal)
-        /// USDC moved between an account and its sub-account.
+        /// USDC moved between an account and its sub-account, between `user` and `destination`.
         case subAccountTransfer(usdc: Decimal, user: Hyperliquid.Address, destination: Hyperliquid.Address)
         case liquidation(Liquidation)
         case vaultCreate(vault: Hyperliquid.Address, usdc: Decimal)
         case vaultDeposit(vault: Hyperliquid.Address, usdc: Decimal)
         case vaultDistribution(vault: Hyperliquid.Address, usdc: Decimal)
         case vaultWithdraw(VaultWithdrawal)
+        /// A vault leader's commission, with the account Hyperliquid names in `user`.
         case vaultLeaderCommission(user: Hyperliquid.Address, usdc: Decimal)
         /// A spot token sent between accounts.
         case spotTransfer(SpotTransfer)
@@ -76,7 +79,7 @@ extension Hyperliquid.LedgerUpdate {
         }
     }
 
-    /// A withdrawal from a vault. Hyperliquid's fields, with its names.
+    /// A withdrawal from a vault.
     public struct VaultWithdrawal: Hashable, Sendable {
         public let vault: Hyperliquid.Address
         public let user: Hyperliquid.Address
@@ -162,7 +165,9 @@ extension Hyperliquid.LedgerUpdate.Change: Decodable {
         case "deposit":
             self = .deposit(usdc: try decimal(.usdc))
         case "withdraw":
-            self = .withdraw(usdc: try decimal(.usdc), nonce: try container.decode(UInt64.self, forKey: .nonce), fee: try decimal(.fee))
+            self = .withdraw(
+                usdc: try decimal(.usdc), nonce: try container.decodeIfPresent(UInt64.self, forKey: .nonce), fee: try decimal(.fee)
+            )
         case "internalTransfer":
             self = .internalTransfer(
                 usdc: try decimal(.usdc), user: try address(.user), destination: try address(.destination), fee: try decimal(.fee)

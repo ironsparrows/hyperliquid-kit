@@ -58,9 +58,10 @@ extension Hyperliquid {
         /// Each order gets its own result: a rejected order doesn't throw. The call throws
         /// `actionRejected` when Hyperliquid rejects the whole batch, and `unexpectedResponse` when its
         /// answer can't be matched to the orders. An order whose price, size or trigger price has more
-        /// than 8 decimals is rounded to 8 when that moves it by less than 1e-12, which absorbs a
-        /// floating-point literal's error, and otherwise throws ``ClientError/Reason/invalidRequest``
-        /// before anything is sent. A market order reads its coin's mid price first, once per perp DEX,
+        /// than 8 decimals is rounded to 8 when that moves it by less than 1e-12, or leaves the same
+        /// `Double`, as the Python SDK compares, which absorbs a floating-point literal's error; for
+        /// large values that can move it by up to half a `Double`'s step. Otherwise it throws
+        /// ``ClientError/Reason/invalidRequest`` before anything is sent. A market order reads its coin's mid price first, once per perp DEX,
         /// and throws ``ClientError/Reason/noMidPrice`` without one, or
         /// ``ClientError/Reason/invalidRequest`` for slippage below 0 or at 100 % or more.
         ///

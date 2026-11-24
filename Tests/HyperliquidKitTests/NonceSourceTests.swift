@@ -17,6 +17,15 @@ extension HyperliquidKitTests {
             #expect(nonces == [1_700_000_000_000, 1_700_000_000_001])
         }
 
+        @Test func `a recorded nonce raises the next, unless it is more than a day ahead`() async {
+            let nonces = NonceSource { 1_000 }
+            let signer: Hyperliquid.Address = "0x0000000000000000000000000000000000000001"
+            _ = await nonces.record(5_000, for: signer, on: .mainnet)
+            #expect(await nonces.next(for: signer, on: .mainnet) == 5_001)
+            _ = await nonces.record(1_000 + 86_400_001, for: signer, on: .mainnet)
+            #expect(await nonces.next(for: signer, on: .mainnet) == 5_002)
+        }
+
         @Test func `each signer and network counts on its own`() async {
             let source = NonceSource { 5 }
             _ = await source.next(for: signer, on: .mainnet)

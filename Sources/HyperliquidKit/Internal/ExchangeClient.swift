@@ -71,7 +71,7 @@ struct ExchangeClient: Sendable {
     ///
     /// Every error once the signed action goes to the transport carries the nonce: network failures,
     /// Hyperliquid's rejections and an answer the client can't read. A nonce given here is recorded as
-    /// used, so the signer's later actions take higher ones.
+    /// used, unless it is more than a day ahead, so the signer's later actions take higher ones.
     private func perform<Response: Decodable & Sendable>(
         _ action: ActionValue, nonce: UInt64?, expiresAfter: Date?, decoding response: Response.Type
     ) async throws -> (Response?, Answer) {

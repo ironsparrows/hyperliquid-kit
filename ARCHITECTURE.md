@@ -58,8 +58,8 @@ Files of one kind use the same `// MARK: -` sections in the same order; a sectio
 | A domain protocol | its requirements by topic · Defaults |
 | A model | the type · Wire |
 | A domain conformer | its methods by topic, then Actions · Requests · Wire |
-| The stream connection | Streams · Subscribing · Connection · Receiving · Inspecting · Wire; routing in `StreamRouting.swift` |
-| The streams (`Streams` and its extensions) | its streams · Subscriptions · Merging · Wire, as each file needs |
+| The stream connection | plain marks inside the actor: Streams · Subscribing · Connection · Receiving · Inspecting · Wire; routing in `StreamRouting.swift` |
+| The streams (`Streams` and its extensions) | its streams · Helpers · Subscriptions · Merging · Wire, as each file needs |
 
 ## Vocabulary
 
