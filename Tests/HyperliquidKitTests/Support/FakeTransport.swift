@@ -70,3 +70,29 @@ extension OrderRequests {
         )
     }
 }
+
+extension PositionRequests {
+    static func test(
+        _ transport: some HTTPTransport, account: Hyperliquid.Address? = nil,
+        signer: (any Hyperliquid.Signer)? = SigningFixtures.pythonTestSigner, nonce: UInt64 = 0
+    ) -> PositionRequests {
+        let info = InfoClient.test(transport)
+        return PositionRequests(
+            info: info, exchange: .test(transport, signer: signer, nonce: nonce), directory: AssetDirectory(info: info),
+            account: account
+        )
+    }
+}
+
+extension TwapRequests {
+    static func test(
+        _ transport: some HTTPTransport, account: Hyperliquid.Address? = nil,
+        signer: (any Hyperliquid.Signer)? = SigningFixtures.pythonTestSigner, nonce: UInt64 = 0
+    ) -> TwapRequests {
+        let info = InfoClient.test(transport)
+        return TwapRequests(
+            info: info, exchange: .test(transport, signer: signer, nonce: nonce), directory: AssetDirectory(info: info),
+            account: account
+        )
+    }
+}

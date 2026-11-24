@@ -38,6 +38,22 @@ struct ExchangeClient: Sendable {
         return list
     }
 
+    /// Sends an action on one item, such as a TWAP order, and returns its status.
+    func perform<Status: Decodable & Sendable>(_ action: ActionValue, decoding _: Status.Type, expiresAfter: Date?)
+        async throws -> Status
+    {
+        let (response, answer) = try await perform(
+            action, nonce: nil, expiresAfter: expiresAfter, decoding: StatusResponse<Status>.self
+        )
+        guard let status = response?.status else {
+            throw HyperliquidError(
+                .unexpectedResponse, message: "The answer has no status", httpStatus: answer.status,
+                body: answer.body, nonce: answer.nonce
+            )
+        }
+        return status
+    }
+
     /// Sends an action whose response the client doesn't read.
     ///
     /// - Parameter nonce: The nonce to sign with; `nil` takes the signer's next one.
@@ -145,6 +161,23 @@ struct StatusesResponse<Status: Decodable & Sendable>: Decodable, Sendable {
 
     init(from decoder: any Decoder) throws {
         statuses = try decoder.container(keyedBy: CodingKeys.self).decode(Payload.self, forKey: .data).statuses
+    }
+}
+
+/// `{"type": …, "data": {"status": …}}`, the response of an action on one item.
+struct StatusResponse<Status: Decodable & Sendable>: Decodable, Sendable {
+    let status: Status
+
+    private enum CodingKeys: String, CodingKey {
+        case data
+    }
+
+    private struct Payload: Decodable {
+        let status: Status
+    }
+
+    init(from decoder: any Decoder) throws {
+        status = try decoder.container(keyedBy: CodingKeys.self).decode(Payload.self, forKey: .data).status
     }
 }
 

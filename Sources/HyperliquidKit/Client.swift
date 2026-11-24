@@ -43,9 +43,9 @@ extension Hyperliquid {
             let account = configuration.vaultAddress ?? account ?? signer?.address
             market = MarketRequests(info: info, directory: directory)
             self.account = AccountRequests(info: info, account: account)
-            position = PositionRequests(info: info, directory: directory, account: account)
+            position = PositionRequests(info: info, exchange: exchange, directory: directory, account: account)
             order = OrderRequests(info: info, exchange: exchange, directory: directory, account: account)
-            twap = TwapRequests(info: info, account: account)
+            twap = TwapRequests(info: info, exchange: exchange, directory: directory, account: account)
         }
     }
 }

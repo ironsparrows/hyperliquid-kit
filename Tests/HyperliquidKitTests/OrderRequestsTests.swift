@@ -61,7 +61,7 @@ extension HyperliquidKitTests {
 
         @Test func `TWAP reads send the user`() async throws {
             let transport = FakeTransport(responses: [.json("[]"), .json("[]")])
-            let twap = TwapRequests(info: .test(transport), account: Self.account)
+            let twap = TwapRequests.test(transport, account: Self.account)
             _ = try await twap.sliceFills()
             _ = try await twap.history()
             #expect(await transport.bodies == [
@@ -80,7 +80,7 @@ extension HyperliquidKitTests {
         @Test func `reads without an account throw missing account before sending`() async {
             let transport = FakeTransport()
             let order = OrderRequests.test(transport, account: nil)
-            let twap = TwapRequests(info: .test(transport), account: nil)
+            let twap = TwapRequests.test(transport)
             let reads: [@Sendable () async throws -> Void] = [
                 { _ = try await order.pending() }, { _ = try await order.pendingDetailed() },
                 { _ = try await order.status(.id(.init(rawValue: 1))) }, { _ = try await order.history() },

@@ -1,5 +1,5 @@
 extension Hyperliquid {
-    /// What happened to one order of a cancellation.
+    /// What happened to one order, or a TWAP order, that was to be canceled.
     public struct CancelResult: Hashable, Sendable {
         /// Hyperliquid's reason when the order wasn't canceled, such as
         /// `Order was never placed, already canceled, or filled.`; `nil` when it was.

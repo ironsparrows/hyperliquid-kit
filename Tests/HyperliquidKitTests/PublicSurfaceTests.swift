@@ -44,6 +44,7 @@ extension HyperliquidKitTests {
                 Hyperliquid.Fill.Direction.self, Hyperliquid.Fill.Liquidation.self, Hyperliquid.Fill.Liquidation.Method.self,
                 Hyperliquid.Twap.self, Hyperliquid.Twap.Status.self, Hyperliquid.TwapSliceFill.self,
                 Hyperliquid.TwapHistoryEntry.self,
+                Hyperliquid.TwapRequest.self, Hyperliquid.TwapPlacementResult.self,
             ]
             _ = types
         }

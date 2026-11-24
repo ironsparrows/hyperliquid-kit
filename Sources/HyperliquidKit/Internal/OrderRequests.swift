@@ -210,21 +210,6 @@ extension OrderRequests {
         }
     }
 
-    /// The number as an action writes it, with at most 8 decimals, the most Hyperliquid's own SDK sends.
-    private func wireNumber(_ value: Decimal, _ field: String) throws(Hyperliquid.ClientError) -> String {
-        guard !value.isNaN else {
-            throw Hyperliquid.ClientError(.invalidRequest, message: "The \(field) isn't a number")
-        }
-        let text = value.wireString
-        let decimals = text.split(separator: ".").dropFirst().first?.count ?? 0
-        guard decimals <= 8 else {
-            throw Hyperliquid.ClientError(
-                .invalidRequest, message: "The \(field) \(text) has \(decimals) decimals; at most 8 can be sent"
-            )
-        }
-        return text
-    }
-
     /// A cancel action; Hyperliquid rejects one hashed with `f: false`, so the flag is sent only when set.
     private func cancelAction(_ type: String, _ cancels: [ActionValue], fast: Bool) -> ActionValue {
         var entries: [ActionValue.Entry] = [.init(key: "type", value: .string(type)), .init(key: "cancels", value: .array(cancels))]
