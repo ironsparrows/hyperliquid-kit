@@ -52,11 +52,27 @@ extension Hyperliquid {
         /// Each order gets its own result: a rejected order doesn't throw. The call throws only when
         /// Hyperliquid rejects the whole batch. An order whose price, size or trigger price has more
         /// than 8 decimals throws ``ClientError/Reason/invalidRequest`` before anything is sent: it is
-        /// rejected, not rounded.
+        /// rejected, not rounded. A market order reads its coin's mid price first, once per perp DEX,
+        /// and throws ``ClientError/Reason/noMidPrice`` without one, or
+        /// ``ClientError/Reason/invalidRequest`` for slippage below 0 or at 100 % or more.
         ///
         /// - Parameter expiresAfter: When set, Hyperliquid rejects the action if it arrives after this
         ///   time. An action rejected this way counts five times against the address's request limit.
         func place(_ orders: [OrderRequest], grouping: Grouping, expiresAfter: Date?) async throws -> [PlacementResult]
+
+        /// Closes the account's position in `coin` with a reduce-only market order, or does nothing and
+        /// returns no results when there is no position. (`order`)
+        ///
+        /// The position is read for the client's account: its vault, else its account, else its signer.
+        ///
+        /// - Parameters:
+        ///   - size: How much to close; `nil` or zero closes the whole position.
+        ///   - price: The price the slippage applies to; `nil` or zero uses the mid price.
+        ///   - slippage: As for ``OrderRequest/market(_:_:size:price:slippage:clientID:)``.
+        ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        func close(
+            _ coin: Coin, size: Decimal?, price: Decimal?, slippage: Slippage, clientID: ClientOrderID?, expiresAfter: Date?
+        ) async throws -> [PlacementResult]
 
         /// Cancels orders by Hyperliquid's ID. (`cancel`)
         ///
@@ -75,8 +91,8 @@ extension Hyperliquid {
 
         /// Replaces orders: each is canceled and its new version placed. (`batchModify`)
         ///
-        /// A new version whose price, size or trigger price has more than 8 decimals throws
-        /// ``ClientError/Reason/invalidRequest`` before anything is sent.
+        /// A new version whose price, size or trigger price has more than 8 decimals, or that is a market
+        /// order, throws ``ClientError/Reason/invalidRequest`` before anything is sent.
         ///
         /// - Parameters:
         ///   - alwaysPlace: Places the new version even when the cancel fails. Without it, the new
@@ -159,6 +175,13 @@ extension Hyperliquid.OrderAPI {
         _ orders: [Hyperliquid.OrderRequest], grouping: Hyperliquid.Grouping = .standalone
     ) async throws -> [Hyperliquid.PlacementResult] {
         try await place(orders, grouping: grouping, expiresAfter: nil)
+    }
+
+    public func close(
+        _ coin: Hyperliquid.Coin, size: Decimal? = nil, price: Decimal? = nil, slippage: Hyperliquid.Slippage = .percent(5),
+        clientID: Hyperliquid.ClientOrderID? = nil
+    ) async throws -> [Hyperliquid.PlacementResult] {
+        try await close(coin, size: size, price: price, slippage: slippage, clientID: clientID, expiresAfter: nil)
     }
 
     public func cancel(_ orders: [Hyperliquid.OrderReference], fast: Bool = false) async throws -> [Hyperliquid.CancelResult] {
