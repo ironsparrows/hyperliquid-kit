@@ -12,7 +12,7 @@ amounts.
 - One protocol per domain, so tests can mock what they use.
 - Actions are signed by a `Signer`: an API wallet's key held by the app, or your own type.
 - Errors say who failed: `HyperliquidError` when Hyperliquid refuses a call, with its message;
-  `Hyperliquid.ClientError` when the client couldn't complete it. Cancelling a call throws
+  `Hyperliquid.ClientError` when the client couldn't complete it. Canceling a call throws
   `CancellationError`.
 
 ## Requirements

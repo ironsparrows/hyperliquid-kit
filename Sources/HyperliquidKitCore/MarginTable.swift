@@ -3,7 +3,7 @@ public import Foundation
 extension Hyperliquid {
     /// The leverage a perpetual allows at each position size.
     public struct MarginTable: Hashable, Sendable {
-        /// Hyperliquid's name for the table, such as `"tiered 10x"`; often empty.
+        /// Hyperliquid's name for the table, such as `"tiered 10x"`; it may be empty.
         public let name: String
         /// The tiers, from the smallest position up.
         public let tiers: [Tier]

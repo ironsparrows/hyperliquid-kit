@@ -8,7 +8,7 @@ extension HyperliquidKitTests.LiveTradingTests {
     // a market order, then closes that size, and checks the pushes decode.
     @Suite(
         "Live account streams", .tags(.live),
-        .enabled(if: areLiveTestsEnabled, "Set HYPERLIQUID_AGENT_KEY and HYPERLIQUID_ACCOUNT to run"),
+        .enabled(if: areLiveTestsEnabled, "Set HYPERLIQUID_AGENT_KEY and a valid HYPERLIQUID_ACCOUNT to run"),
         .timeLimit(.minutes(2))
     )
     struct LiveAccountStreamTests {
@@ -35,11 +35,7 @@ extension HyperliquidKitTests.LiveTradingTests {
             #expect(try await stream.balances().first { _ in true } != nil)
             #expect(try await stream.twapStates().first { _ in true } != nil)
 
-            let mid = try #require(try await client.market.mids()["BTC"])
-            let sizeDecimals = try #require(try await client.market.perpetuals().first { $0.coin == "BTC" }).sizeDecimals
-            var size = Decimal()
-            var exact = Decimal(11) / mid
-            NSDecimalRound(&size, &exact, sizeDecimals, .up)
+            let size = try await HyperliquidKitTests.LiveTradingTests.btcSize(worth: 11, on: client)
             let opened = try await client.order.place([.market(.buy, "BTC", size: size)])
             #expect(opened.first?.status == .filled, "\(opened)")
             let closed = try await client.order.close("BTC", size: size)

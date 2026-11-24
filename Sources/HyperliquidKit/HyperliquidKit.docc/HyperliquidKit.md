@@ -23,7 +23,7 @@ a ``Hyperliquid/PrivateKeySigner``; see <doc:APIWallets>.
 Prices, sizes and amounts are `Decimal`, read exactly as Hyperliquid sends them; sizes are in the
 coin traded. Every call that needs Hyperliquid's answer is `async`. It throws ``HyperliquidError``
 when Hyperliquid refuses it or answers in a way the client can't use, and
-``Hyperliquid/ClientError`` when the client couldn't complete it; besides those, cancelling throws
+``Hyperliquid/ClientError`` when the client couldn't complete it; besides those, canceling throws
 `CancellationError`. A stream push the client can't read ends its stream with `DecodingError`.
 
 The client covers perpetuals, on the first perp DEX and on builder-deployed ones. Spot markets

@@ -5,7 +5,7 @@ extension Hyperliquid {
     /// (``HyperliquidError``).
     ///
     /// Network failures, such as a timeout or no connection, arrive as this error too, with the
-    /// network library's error in ``underlyingError``. Cancelling the task throws `CancellationError`
+    /// network library's error in ``underlyingError``. Canceling the task throws `CancellationError`
     /// instead.
     ///
     /// `localizedDescription` explains the reason in a sentence, followed by ``message`` when there

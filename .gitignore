@@ -8,5 +8,14 @@ DerivedData/
 .netrc
 /Package.resolved
 
-# Live test values for Xcode runs. Only you create this file; see CONTRIBUTING.md.
-/Tests/HyperliquidKitTestSupport/LocalLiveTestSettings.swift
+# Live test values for Xcode runs. Only you create this file; see CONTRIBUTING.md. Ignored wherever
+# it lands, so a copy elsewhere can't be committed either.
+LocalLiveTestSettings.swift
+
+# Environment files, which can hold keys.
+.env
+.env.*
+
+# Shared Xcode schemes, whose environment variables can hold keys.
+.swiftpm/xcode/xcshareddata/
+*.xcscheme

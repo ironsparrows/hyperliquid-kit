@@ -167,6 +167,6 @@ answer the client can't read may still execute, and its error carries the nonce.
 action can no longer execute; if Hyperliquid rejects it with
 ``HyperliquidError/Kind-swift.struct/actionRejected``, the nonce was already used, most likely by the
 action. If the invalidation itself fails on the network, its outcome is unknown too. Either way,
-read the orders and fills before trying again. Cancelling the task
+read the orders and fills before trying again. Canceling the task
 that waits for an action throws `CancellationError`, which carries no nonce: the action may still
 execute.

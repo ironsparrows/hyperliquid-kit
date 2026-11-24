@@ -8,7 +8,7 @@ extension HyperliquidKitTests.LiveTradingTests {
     // 10 % under the mid price, then modifies and cancels it.
     @Suite(
         "Live order actions", .tags(.live),
-        .enabled(if: areLiveTestsEnabled, "Set HYPERLIQUID_AGENT_KEY and HYPERLIQUID_ACCOUNT to run"),
+        .enabled(if: areLiveTestsEnabled, "Set HYPERLIQUID_AGENT_KEY and a valid HYPERLIQUID_ACCOUNT to run"),
         .timeLimit(.minutes(2))
     )
     struct LiveOrderActionTests {
@@ -18,9 +18,8 @@ extension HyperliquidKitTests.LiveTradingTests {
                 account: values.account, signer: try Hyperliquid.PrivateKeySigner(hexKey: values.agentKey)
             )
             let mid = try #require(try await client.market.mids()["BTC"])
-            let sizeDecimals = try #require(try await client.market.perpetuals().first { $0.coin == "BTC" }).sizeDecimals
             let price = Self.fiveSignificantFigures(mid * Decimal(string: "0.9")!)
-            let size = Self.rounded(Decimal(11) / price, scale: sizeDecimals, .up)
+            let size = try await HyperliquidKitTests.LiveTradingTests.btcSize(worth: 11, at: price, on: client)
 
             let placed = try await client.order.place([.limit(.buy, "BTC", price: price, size: size, timeInForce: .addLiquidityOnly)])
             let id = try #require(placed.first?.orderID, "\(placed)")

@@ -7,7 +7,8 @@ package import Testing
 // file: a gitignored file only a contributor creates, so Xcode runs need no environment variables.
 // Without that file, the protocol's defaults below are empty and the package still builds.
 
-/// Whether live tests run: an API wallet's key and the account's address are set.
+/// Whether live tests run: an API wallet's key and a valid account address are set. A malformed
+/// address makes them skip, so check it when they skip unexpectedly.
 package var areLiveTestsEnabled: Bool { LiveTestSettings.values != nil }
 
 /// The values live tests read.

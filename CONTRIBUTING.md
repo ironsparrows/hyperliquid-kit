@@ -6,7 +6,7 @@ Read [ARCHITECTURE.md](ARCHITECTURE.md) first: it lists the targets, the access 
 
 Swift 6.4 or later. On macOS, Xcode 27.2 or later for the iOS build.
 
-Supported platforms: macOS 13, iOS 16, tvOS 16, visionOS 1 and Linux. watchOS is not supported.
+Platforms: macOS 13, iOS 16, tvOS 16 and visionOS 1, and Linux, a target platform not yet built or tested. watchOS is not supported.
 
 On Linux, the compressed streams decode through the system's zlib, so building needs zlib's development headers, such as `zlib1g-dev` on Debian and Ubuntu.
 
@@ -44,7 +44,7 @@ The code of the documentation's examples and the README's lives in `Tests/Hyperl
 
 Only this package's warnings can fail the build: SwiftPM suppresses warnings in dependencies.
 
-Linux is a supported platform but has no local check yet. `swift build` and `swift test` on Linux are unverified until CI or a Linux machine runs them, including the `HyperliquidKitTestSupport` target, which imports Testing.
+Linux has no local check yet. `swift build` and `swift test` on Linux are unverified until CI or a Linux machine runs them, including the `HyperliquidKitTestSupport` target, which imports Testing.
 
 ## Tests
 
@@ -72,8 +72,8 @@ Live tests run when an API wallet's key and the account's address are set; other
 
 Set them in the environment, reading the key without echo so it stays out of your shell history:
 
-```zsh
-read -rs "HYPERLIQUID_AGENT_KEY?API wallet key: " && export HYPERLIQUID_AGENT_KEY && export HYPERLIQUID_ACCOUNT=0xYourAccountAddress
+```bash
+printf 'API wallet key: ' && read -rs HYPERLIQUID_AGENT_KEY && echo && export HYPERLIQUID_AGENT_KEY && export HYPERLIQUID_ACCOUNT=0xYourAccountAddress
 ```
 
 ```bash
@@ -88,6 +88,8 @@ extension LocalLiveTestSettings {
     static let agentKey = ""
 }
 ```
+
+Never put the key in an Xcode scheme's environment variables: a shared scheme is a file that can be committed.
 
 Values set in the environment win over the file's: when either is set there, the file isn't read. The two are always taken together from one place. Without the file, the package builds and live tests skip. The values are compiled into the build folders (`.build`, DerivedData), so delete those before sharing them.
 

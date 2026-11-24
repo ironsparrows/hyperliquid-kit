@@ -243,7 +243,7 @@ extension HyperliquidKitTests {
         }
 
         @Test func `a rejected action throws Hyperliquid's message with the nonce`() async {
-            let transport = Self.transport(#"{"status":"err","response":"User or API Wallet 0x0459dea86a6d8a2bb4ef1bb2a1a2bd5ae44ece91 does not exist."}"#)
+            let transport = Self.transport(#"{"status":"err","response":"User or API Wallet 0x00000000000000000000000000000000000000c4 does not exist."}"#)
             await #expect {
                 try await OrderRequests.test(transport, nonce: 42).clearScheduledCancel()
             } throws: { error in

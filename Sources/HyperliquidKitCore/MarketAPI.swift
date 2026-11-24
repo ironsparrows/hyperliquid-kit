@@ -9,7 +9,7 @@ extension Hyperliquid {
     /// loading them once per perp DEX, and throw ``ClientError/Reason/unknownCoin`` for a perpetual
     /// that isn't listed. Spot and outcome coins, such as `"@107"`, throw
     /// ``ClientError/Reason/unsupportedMarket`` without a request: the client covers perpetuals only.
-    /// Reads that take only a perp DEX send it as given, and an unknown one gets Hyperliquid's own
+    /// Other reads that take a perp DEX send it as given, and an unknown one gets Hyperliquid's own
     /// answer, usually a ``HyperliquidError``.
     public protocol MarketAPI: Sendable {
         // MARK: Perpetuals
@@ -59,8 +59,9 @@ extension Hyperliquid {
         /// only. (`predictedFundings`)
         func predictedFundings() async throws -> [PredictedFunding]
 
-        /// A builder-deployed perp DEX's caps, or `nil` for the first perp DEX, for which Hyperliquid
-        /// reports no limits. (`perpDexLimits`)
+        /// A builder-deployed perp DEX's caps, or `nil` when Hyperliquid answers none. Hyperliquid takes
+        /// only a builder-deployed perp DEX here, so ``PerpDex/first`` gets `nil` without a request.
+        /// (`perpDexLimits`)
         func perpDexLimits(dex: PerpDex) async throws -> PerpDex.Limits?
 
         /// A perp DEX's net deposits; ``PerpDex/first`` is accepted. (`perpDexStatus`)

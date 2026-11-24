@@ -65,7 +65,7 @@ actor AssetDirectory {
             return try await task.valueUnlessCancelled
         } catch {
             // Forget a failed load so the next lookup tries again, unless another caller already did. A
-            // lookup cancelled while the load runs leaves it for the others; if that load then fails,
+            // lookup canceled while the load runs leaves it for the others; if that load then fails,
             // the next lookup gets its error and forgets it.
             if !(error is CancellationError && Task.isCancelled), universes[dex] == task { universes[dex] = nil }
             throw error

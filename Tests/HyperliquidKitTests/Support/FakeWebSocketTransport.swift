@@ -63,7 +63,7 @@ actor FakeWebSocketSession: WebSocketSession {
     }
 }
 
-/// Waits for `value` to return something, checking every millisecond for up to 5 seconds.
+/// Waits for `value` to return something, checking it up to 5000 times, a millisecond apart.
 @discardableResult
 func eventually<Value>(_ value: () async throws -> Value?) async throws -> Value {
     for _ in 0..<5000 {

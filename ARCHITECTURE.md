@@ -48,18 +48,18 @@ The three deflate-compressed streams (`l2` order book diffs, `fastAssetCtxs` and
 
 - In `HyperliquidKitCore` and `HyperliquidKit`, a file with no `public` declaration goes in `Internal/`, so a module's root shows what apps can use.
 - A file owns one responsibility and is named after its primary type. Wire types live, `private`, in the file that reads or writes them.
-- Tests mirror the sources: `HyperliquidKitCoreTests` for the contract, `HyperliquidKitTests` for the client. `HyperliquidKitTestSupport` (in `Tests/`, not a product) holds the live test gate (`areLiveTestsEnabled`, `LiveTestSettings`) and the `.live` tag. In `HyperliquidKitTests`, `Loopback/` sends real requests to a local server, `Live/` calls Hyperliquid's mainnet, and `Support/` holds fakes and helpers. `HyperliquidKitCoreTests/Fixtures/` holds responses and pushes recorded from Hyperliquid, byte for byte except account addresses and hashes, which are swapped for fakes. `HyperliquidKitTests/Fixtures/` holds recorded streams of compressed pushes, one frame per line, and the `meta` responses that name their positions.
+- Tests mirror the sources: `HyperliquidKitCoreTests` for the contract, `HyperliquidKitTests` for the client. `HyperliquidKitTestSupport` (in `Tests/`, not a product) holds the live test gate (`areLiveTestsEnabled`, `LiveTestSettings`) and the `.live` tag. In `HyperliquidKitTests`, `Loopback/` sends real requests to a local server, `Live/` calls Hyperliquid's mainnet, and `Support/` holds fakes and helpers. `HyperliquidKitCoreTests/Fixtures/` holds responses and pushes recorded from Hyperliquid, byte for byte except account addresses and hashes, which are swapped for fakes. `HyperliquidKitTests/Fixtures/` holds recorded streams of compressed pushes, one frame per line, and the `meta` responses that name their positions; resources don't cross test targets, so `meta.json` is in both, and the two change together. `.gitattributes` keeps every fixture byte for byte.
 - `HyperliquidKit.docc` holds the documentation's landing page and articles; `HyperliquidKitCore.docc` holds the landing page of `HyperliquidKitCore` alone. The code of their examples and the README's lives in `Tests/HyperliquidKitTests/DocumentationExamples.swift`, compiled but never run; `DocumentationExampleTests` checks each example matches it.
 
-Files of one kind use the same `// MARK: -` sections in the same order; a section that doesn't apply is left out:
+Files of one kind use the same `// MARK: -` sections in the same order; a section that doesn't apply is left out. Inside a type, plain `// MARK:` marks group its members by topic, such as a protocol's requirements (Perpetuals, Prices and trades, …) and the matching methods of its conformer.
 
 | Kind | Sections |
 |---|---|
-| A domain protocol | Protocol · Defaults · Requests |
-| A model | Model · Reading · Wire |
-| A domain conformer | Requests or Actions · Wire |
-| The stream connection | Connection · Subscribing · Receiving · Recovering · Wire |
-| The streams (`Streams` and its extensions) | Subscriptions · Merging · Wire, as each file needs |
+| A domain protocol | its requirements by topic · Defaults |
+| A model | the type · Wire |
+| A domain conformer | its methods by topic, then Actions · Requests · Wire |
+| The stream connection | Streams · Subscribing · Connection · Receiving · Inspecting · Wire; routing in `StreamRouting.swift` |
+| The streams (`Streams` and its extensions) | its streams · Subscriptions · Merging · Wire, as each file needs |
 
 ## Vocabulary
 

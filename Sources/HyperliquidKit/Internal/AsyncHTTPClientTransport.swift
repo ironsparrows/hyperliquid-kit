@@ -33,7 +33,7 @@ struct AsyncHTTPClientTransport: HTTPTransport {
             }
             return TransportResponse(status: Int(response.status.code), body: Data(body.readableBytesView))
         } catch {
-            // AsyncHTTPClient can fail a cancelled request with its own error first.
+            // AsyncHTTPClient can fail a canceled request with its own error first.
             if Task.isCancelled { throw CancellationError() }
             throw Self.clientError(for: error)
         }

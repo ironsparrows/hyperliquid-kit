@@ -1,8 +1,8 @@
 import NIOConcurrencyHelpers
 
 extension Task where Failure == any Error {
-    /// The task's value, or `CancellationError` as soon as the waiting task is cancelled. The task
-    /// itself keeps running for its other waiters; a cancelled waiter leaves a small task behind until
+    /// The task's value, or `CancellationError` as soon as the waiting task is canceled. The task
+    /// itself keeps running for its other waiters; a canceled waiter leaves a small task behind until
     /// it ends.
     var valueUnlessCancelled: Success {
         get async throws {

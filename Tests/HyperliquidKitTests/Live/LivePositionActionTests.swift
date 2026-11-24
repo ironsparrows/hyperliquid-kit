@@ -9,7 +9,7 @@ extension HyperliquidKitTests.LiveTradingTests {
     // $110 BTC TWAP over 7 days and cancels it. A slice that filled before the cancel stays open.
     @Suite(
         "Live leverage, margin and TWAP actions", .tags(.live),
-        .enabled(if: areLiveTestsEnabled, "Set HYPERLIQUID_AGENT_KEY and HYPERLIQUID_ACCOUNT to run"),
+        .enabled(if: areLiveTestsEnabled, "Set HYPERLIQUID_AGENT_KEY and a valid HYPERLIQUID_ACCOUNT to run"),
         .timeLimit(.minutes(2)), .serialized
     )
     struct LivePositionActionTests {
@@ -22,14 +22,8 @@ extension HyperliquidKitTests.LiveTradingTests {
             )
         }
 
-        /// A BTC size worth about `dollars` at the mid price.
         private func size(worth dollars: Decimal) async throws -> Decimal {
-            let mid = try #require(try await client.market.mids()["BTC"])
-            let sizeDecimals = try #require(try await client.market.perpetuals().first { $0.coin == "BTC" }).sizeDecimals
-            var size = Decimal()
-            var exact = dollars / mid
-            NSDecimalRound(&size, &exact, sizeDecimals, .up)
-            return size
+            try await HyperliquidKitTests.LiveTradingTests.btcSize(worth: dollars, on: client)
         }
 
         @Test func `leverage changes and returns, and isolated margin moves on a small position`() async throws {

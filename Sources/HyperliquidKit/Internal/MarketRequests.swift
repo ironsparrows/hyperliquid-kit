@@ -77,7 +77,7 @@ struct MarketRequests: Hyperliquid.MarketAPI {
     }
 
     func perpDexLimits(dex: Hyperliquid.PerpDex) async throws -> Hyperliquid.PerpDex.Limits? {
-        // Hyperliquid doesn't take the first perp DEX's empty name here; it has no limits.
+        // Hyperliquid refuses the first perp DEX's empty name here.
         guard dex != .first else { return nil }
         return try await info.send(.perpDexLimits(dex))
     }

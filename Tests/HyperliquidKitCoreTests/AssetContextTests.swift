@@ -18,5 +18,13 @@ extension HyperliquidKitCoreTests {
             #expect(btc.impactAskPrice == Decimal(string: "59687.0"))
             #expect(contexts.contains { $0.midPrice == nil })
         }
+
+        @Test(arguments: ["[]", #"["1.0"]"#, #"["1.0","2.0","3.0"]"#])
+        func `impact prices other than a bid and an ask don't decode`(impactPrices: String) {
+            let json = #"{"funding":"0","openInterest":"1","prevDayPx":"1","dayNtlVlm":"1","oraclePx":"1","markPx":"1","impactPxs":"# + impactPrices + "}"
+            #expect(throws: DecodingError.self) {
+                try JSONDecoder().decode(Hyperliquid.AssetContext.self, from: Data(json.utf8))
+            }
+        }
     }
 }

@@ -11,7 +11,7 @@ extension Hyperliquid {
     /// ``ClientError/Reason/missingSigner`` without one, and ``ClientError/Reason/unsupportedMarket`` for
     /// a spot or outcome coin, before anything is sent. An action that fails on the network, that
     /// Hyperliquid rejects, or whose answer the client can't read carries its nonce in the error.
-    /// Cancelling the task throws `CancellationError`, which carries none: an action cancelled after it
+    /// Canceling the task throws `CancellationError`, which carries none: an action canceled after it
     /// was sent may still execute.
     ///
     /// Until one of these actions commits, Hyperliquid deprioritizes all of the account's actions in

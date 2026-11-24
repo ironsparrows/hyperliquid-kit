@@ -6,7 +6,7 @@ import Testing
 extension HyperliquidKitTests {
     @Suite(
         "Live market data", .tags(.live),
-        .enabled(if: areLiveTestsEnabled, "Set HYPERLIQUID_AGENT_KEY and HYPERLIQUID_ACCOUNT to run"),
+        .enabled(if: areLiveTestsEnabled, "Set HYPERLIQUID_AGENT_KEY and a valid HYPERLIQUID_ACCOUNT to run"),
         .timeLimit(.minutes(2))
     )
     struct LiveMarketDataTests {

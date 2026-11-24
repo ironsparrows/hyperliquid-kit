@@ -20,6 +20,9 @@ extension Hyperliquid {
         /// The 32-byte EIP-712 hash to sign.
         public let digest: Data
         /// The request as EIP-712 typed data in JSON, the form `eth_signTypedData_v4` takes.
+        ///
+        /// Its hash is ``digest``, which published signing vectors confirm; the JSON itself has not
+        /// been checked against a wallet's signature.
         public let typedData: String
 
         package init(digest: Data, typedData: String) {

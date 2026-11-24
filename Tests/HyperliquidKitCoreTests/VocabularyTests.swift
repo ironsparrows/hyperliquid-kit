@@ -6,7 +6,7 @@ extension HyperliquidKitCoreTests {
     @Suite("Vocabulary")
     struct VocabularyTests {
         enum Vocabulary: CaseIterable, Sendable {
-            case side, timeInForce, triggerKind, orderStatus, marginMode, accountMode
+            case side, timeInForce, triggerKind, orderStatus, marginMode, accountMode, placementStatus
         }
 
         @Test(arguments: Vocabulary.allCases)
@@ -72,6 +72,7 @@ extension HyperliquidKitCoreTests {
             case .orderStatus: try roundTrip(Hyperliquid.OrderStatus.self, json)
             case .marginMode: try roundTrip(Hyperliquid.MarginMode.self, json)
             case .accountMode: try roundTrip(Hyperliquid.AccountMode.self, json)
+            case .placementStatus: try roundTrip(Hyperliquid.PlacementResult.Status.self, json)
             }
         }
 

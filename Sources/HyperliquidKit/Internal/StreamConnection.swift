@@ -110,7 +110,7 @@ actor StreamConnection {
     /// A stream of the pushes of `subscription`, each decoded by `decode` off the connection's actor, in
     /// the order they arrived.
     ///
-    /// The subscription is sent when the stream is created; ending the stream, by cancelling its task or
+    /// The subscription is sent when the stream is created; ending the stream, by canceling its task or
     /// dropping it, removes it. A push that fails to decode ends the stream with the decoding error; a
     /// latest-only stream can skip a push before decoding it, when a newer one arrives first.
     nonisolated func stream<Element: Sendable>(
