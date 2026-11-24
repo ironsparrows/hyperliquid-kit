@@ -37,7 +37,7 @@ extension HyperliquidKitTests {
                 Hyperliquid.RateLimit.self, Hyperliquid.AccountRole.self, Hyperliquid.AccountRole.Kind.self,
                 Hyperliquid.SubAccount.self, Hyperliquid.Portfolio.self, Hyperliquid.Portfolio.Window.self,
                 Hyperliquid.Portfolio.History.self, Hyperliquid.Portfolio.Sample.self, Hyperliquid.APIWallet.self,
-                Hyperliquid.FundingPayment.self, Hyperliquid.LedgerUpdate.self, Hyperliquid.LedgerUpdate.Kind.self,
+                Hyperliquid.FundingPayment.self, Hyperliquid.LedgerUpdate.self, Hyperliquid.LedgerUpdate.Change.self,
                 Hyperliquid.Coin.Kind.self, (any Hyperliquid.OrderAPI).self, (any Hyperliquid.TwapAPI).self,
                 Hyperliquid.OrderIdentifier.self, Hyperliquid.Order.self, Hyperliquid.Order.Details.self,
                 Hyperliquid.Order.Kind.self, Hyperliquid.HistoricalOrder.self, Hyperliquid.Fill.self,

@@ -264,7 +264,7 @@ extension HyperliquidKitTests {
             )
             #expect(try await fundings.next()?.elements.first?.usdc == Decimal(string: "-2.5"))
             let update = try #require(try await ledger.next()?.elements.first)
-            #expect(update.kind == .deposit && update.usdc == 100)
+            #expect(update.change == .deposit(usdc: 100))
             let slice = try #require(try await slices.next())
             #expect(!slice.isSnapshot && slice.elements.first?.twapID == .init(rawValue: 2_814_131))
             #expect(try await history.next() == .init(isSnapshot: true, elements: []))

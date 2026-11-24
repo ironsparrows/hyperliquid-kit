@@ -202,23 +202,50 @@ extension HyperliquidKitCoreTests {
             #expect(payment.usdc == Decimal(string: "0.145796"))
         }
 
-        @Test func `deposits and account class transfers decode with their USDC`() throws {
-            let updates = try decode(
-                [Hyperliquid.LedgerUpdate].self,
-                #"[{"time":1731999196516,"hash":"0x0000000000000000000000000000000000000000000000000000000000000001","delta":{"type":"deposit","usdc":"2703997.4500000002"}},{"time":1732834706761,"hash":"0x0000000000000000000000000000000000000000000000000000000000000002","delta":{"type":"accountClassTransfer","usdc":"12.0","toPerp":false}}]"#
-            )
-            #expect(updates.map(\.kind) == [.deposit, .accountClassTransfer])
-            #expect(updates.map(\.usdc) == [Decimal(string: "2703997.4500000002"), 12])
+        @Test func `recorded ledger updates decode their transfers and spot genesis`() throws {
+            let updates = try decoder.decode([Hyperliquid.LedgerUpdate].self, from: Fixture.data("userNonFundingLedgerUpdates"))
+            #expect(updates.count == 8)
+            guard case .internalTransfer(let usdc, _, let destination, let fee) = updates.first?.change else {
+                Issue.record("Expected an internal transfer, got \(String(describing: updates.first?.change))")
+                return
+            }
+            #expect(usdc == 1 && fee == 0 && destination == "0x0000000000000000000000000000000000000000")
+            guard case .spotTransfer(let transfer) = updates[5].change else {
+                Issue.record("Expected a spot transfer, got \(updates[5].change)")
+                return
+            }
+            #expect(transfer.token == "PURR" && transfer.amount == Decimal(string: "0.0737"))
+            #expect(updates.last?.change == .spotGenesis(token: "LICK", amount: Decimal(string: "1.18985")!))
         }
 
-        @Test func `ledger updates decode their kind, and USDC where they move it`() throws {
-            let updates = try decoder.decode([Hyperliquid.LedgerUpdate].self, from: Fixture.data("userNonFundingLedgerUpdates"))
-            #expect(updates.map(\.kind) == [
-                .internalTransfer, .internalTransfer, .internalTransfer, .internalTransfer, .internalTransfer,
-                .spotTransfer, .spotTransfer, .spotGenesis,
-            ])
-            #expect(updates.first?.usdc == 1)
-            #expect(updates.last?.usdc == nil)
+        /// Each kind the websocket subscriptions page documents, with fake addresses.
+        @Test(arguments: [
+            (#"{"type":"deposit","usdc":"2703997.4500000002"}"#, Hyperliquid.LedgerUpdate.Change.deposit(usdc: Decimal(string: "2703997.4500000002")!)),
+            (#"{"type":"withdraw","usdc":"10.5","nonce":1700000000000,"fee":"1.0"}"#, .withdraw(usdc: Decimal(string: "10.5")!, nonce: 1_700_000_000_000, fee: 1)),
+            (#"{"type":"internalTransfer","usdc":"5.0","user":"0x00000000000000000000000000000000000000a1","destination":"0x00000000000000000000000000000000000000b2","fee":"1.0"}"#,
+             .internalTransfer(usdc: 5, user: "0x00000000000000000000000000000000000000a1", destination: "0x00000000000000000000000000000000000000b2", fee: 1)),
+            (#"{"type":"subAccountTransfer","usdc":"2.0","user":"0x00000000000000000000000000000000000000a1","destination":"0x00000000000000000000000000000000000000b2"}"#,
+             .subAccountTransfer(usdc: 2, user: "0x00000000000000000000000000000000000000a1", destination: "0x00000000000000000000000000000000000000b2")),
+            (#"{"type":"liquidation","accountValue":"100.0","leverageType":"Isolated","liquidatedPositions":[{"coin":"ETH","szi":"-0.5"}]}"#,
+             .liquidation(.init(accountValue: 100, marginMode: .isolated, positions: [.init(coin: "ETH", size: Decimal(string: "-0.5")!)]))),
+            (#"{"type":"vaultCreate","vault":"0x00000000000000000000000000000000000000c3","usdc":"100.0"}"#, .vaultCreate(vault: "0x00000000000000000000000000000000000000c3", usdc: 100)),
+            (#"{"type":"vaultDeposit","vault":"0x00000000000000000000000000000000000000c3","usdc":"50.0"}"#, .vaultDeposit(vault: "0x00000000000000000000000000000000000000c3", usdc: 50)),
+            (#"{"type":"vaultDistribution","vault":"0x00000000000000000000000000000000000000c3","usdc":"3.0"}"#, .vaultDistribution(vault: "0x00000000000000000000000000000000000000c3", usdc: 3)),
+            (#"{"type":"vaultWithdraw","vault":"0x00000000000000000000000000000000000000c3","user":"0x00000000000000000000000000000000000000a1","requestedUsd":"10.0","commission":"1.0","closingCost":"0.5","basis":"8.0","netWithdrawnUsd":"8.5"}"#,
+             .vaultWithdraw(.init(vault: "0x00000000000000000000000000000000000000c3", user: "0x00000000000000000000000000000000000000a1", requestedUSD: 10, commission: 1, closingCost: Decimal(string: "0.5")!, basis: 8, netWithdrawnUSD: Decimal(string: "8.5")!))),
+            (#"{"type":"vaultLeaderCommission","user":"0x00000000000000000000000000000000000000a1","usdc":"0.25"}"#, .vaultLeaderCommission(user: "0x00000000000000000000000000000000000000a1", usdc: Decimal(string: "0.25")!)),
+            (#"{"type":"spotTransfer","token":"HYPE","amount":"1.5","usdcValue":"92.7","user":"0x00000000000000000000000000000000000000a1","destination":"0x00000000000000000000000000000000000000b2","fee":"0.0"}"#,
+             .spotTransfer(.init(token: "HYPE", amount: Decimal(string: "1.5")!, usdcValue: Decimal(string: "92.7")!, user: "0x00000000000000000000000000000000000000a1", destination: "0x00000000000000000000000000000000000000b2", fee: 0))),
+            (#"{"type":"accountClassTransfer","usdc":"12.0","toPerp":false}"#, .accountClassTransfer(usdc: 12, toPerp: false)),
+            (#"{"type":"spotGenesis","token":"HIP","amount":"567983.7"}"#, .spotGenesis(token: "HIP", amount: Decimal(string: "567983.7")!)),
+            (#"{"type":"rewardsClaim","amount":"4.2"}"#, .rewardsClaim(amount: Decimal(string: "4.2")!)),
+            (#"{"type":"send","user":"0x00000000000000000000000000000000000000a1","amount":"1.0"}"#, .unknown(kind: "send")),
+        ])
+        func `each documented ledger change decodes its fields, and another kind keeps its name`(
+            delta: String, expected: Hyperliquid.LedgerUpdate.Change
+        ) throws {
+            let json = #"{"time":1731999196516,"hash":"0x0000000000000000000000000000000000000000000000000000000000000001","delta":"# + delta + "}"
+            #expect(try decode(Hyperliquid.LedgerUpdate.self, json).change == expected)
         }
 
         // MARK: Documented examples
