@@ -20,8 +20,9 @@ struct ExchangeClient: Sendable {
 
     /// Sends an action on several orders and returns one status per order.
     ///
-    /// When Hyperliquid rejects the whole batch before looking at single orders, it can answer with one
-    /// status for all of them; that throws, since the statuses can't be matched to the orders.
+    /// When Hyperliquid rejects the whole batch before looking at single orders, it answers with one
+    /// error for all of them, which throws `actionRejected` with its text. Any other count of statuses
+    /// throws `unexpectedResponse`, since the statuses can't be matched to the orders.
     func perform<Status: Decodable & Sendable>(_ action: ActionValue, statusesFor count: Int, expiresAfter: Date?)
         async throws -> [Status]
     {
@@ -30,9 +31,14 @@ struct ExchangeClient: Sendable {
         )
         let list = statuses?.statuses ?? []
         guard list.count == count else {
+            if let error = try? JSONDecoder().decode(BatchError.self, from: answer.body).error {
+                throw HyperliquidError(
+                    .actionRejected, message: error, httpStatus: answer.status, body: answer.body, nonce: answer.nonce
+                )
+            }
             throw HyperliquidError(
-                .actionRejected, message: "\(list.count) statuses for \(count) orders: \(list)",
-                httpStatus: answer.status, body: answer.body, nonce: answer.nonce
+                .unexpectedResponse, message: "\(list.count) statuses for \(count) orders", httpStatus: answer.status,
+                body: answer.body, nonce: answer.nonce
             )
         }
         return list
@@ -63,14 +69,19 @@ struct ExchangeClient: Sendable {
 
     /// Signs and sends an action, and decodes the `response` of Hyperliquid's answer.
     ///
-    /// Every error after the nonce is taken carries it: Hyperliquid's rejections, network failures and
-    /// an answer the client can't read.
+    /// Every error once the signed action goes to the transport carries the nonce: network failures,
+    /// Hyperliquid's rejections and an answer the client can't read. A nonce given here is recorded as
+    /// used, so the signer's later actions take higher ones.
     private func perform<Response: Decodable & Sendable>(
         _ action: ActionValue, nonce: UInt64?, expiresAfter: Date?, decoding response: Response.Type
     ) async throws -> (Response?, Answer) {
         // 1. The signer, and the nonce it signs with.
         let signer = try requireSigner()
-        let nonce = if let nonce { nonce } else { await nonces.next(for: signer.address, on: network) }
+        let nonce = if let nonce {
+            await nonces.record(nonce, for: signer.address, on: network)
+        } else {
+            await nonces.next(for: signer.address, on: network)
+        }
         let expiresAfter = expiresAfter.map(milliseconds)
         // 2. Sign the action with what Hyperliquid hashes beside it.
         let l1Action = L1Action(action: action, nonce: nonce, vault: vault, expiresAfter: expiresAfter)
@@ -147,8 +158,38 @@ private enum Envelope<Response: Decodable>: Decodable {
     }
 }
 
+/// `{"status": "ok", "response": {"data": {"statuses": [{"error": …}]}}}`: one error for a whole batch.
+private struct BatchError: Decodable {
+    let error: String
+
+    private struct Response: Decodable {
+        let data: Payload
+    }
+
+    private struct Payload: Decodable {
+        let statuses: [Status]
+    }
+
+    private struct Status: Decodable {
+        let error: String
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case response
+    }
+
+    init(from decoder: any Decoder) throws {
+        let statuses = try decoder.container(keyedBy: CodingKeys.self).decode(Response.self, forKey: .response).data
+            .statuses
+        guard statuses.count == 1, let status = statuses.first else {
+            throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "Not one error"))
+        }
+        error = status.error
+    }
+}
+
 /// `{"type": …, "data": {"statuses": [...]}}`, the response of an action on several orders.
-struct StatusesResponse<Status: Decodable & Sendable>: Decodable, Sendable {
+private struct StatusesResponse<Status: Decodable & Sendable>: Decodable, Sendable {
     let statuses: [Status]
 
     private enum CodingKeys: String, CodingKey {
@@ -165,7 +206,7 @@ struct StatusesResponse<Status: Decodable & Sendable>: Decodable, Sendable {
 }
 
 /// `{"type": …, "data": {"status": …}}`, the response of an action on one item.
-struct StatusResponse<Status: Decodable & Sendable>: Decodable, Sendable {
+private struct StatusResponse<Status: Decodable & Sendable>: Decodable, Sendable {
     let status: Status
 
     private enum CodingKeys: String, CodingKey {
@@ -182,6 +223,6 @@ struct StatusResponse<Status: Decodable & Sendable>: Decodable, Sendable {
 }
 
 /// A response the client doesn't read, such as `{"type": "default"}`.
-struct IgnoredResponse: Decodable, Sendable {
+private struct IgnoredResponse: Decodable, Sendable {
     init(from decoder: any Decoder) throws {}
 }

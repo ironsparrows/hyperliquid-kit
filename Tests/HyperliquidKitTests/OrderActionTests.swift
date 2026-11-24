@@ -161,6 +161,39 @@ extension HyperliquidKitTests {
             #expect(try await Self.exchangeBody(transport).contains(#""s":"0.12345678""#))
         }
 
+        @Test func `a number within 1e-12 of 8 decimals is rounded, as from a floating-point literal`() async throws {
+            let transport = Self.transport(Self.meta, Self.resting)
+            // A `Decimal` made from the `Double` 0.001 is 0.001000000000000000020816…
+            _ = try await OrderRequests.test(transport).place([.limit(.buy, "BTC", price: 60000, size: Decimal(0.001))])
+            #expect(try await Self.exchangeBody(transport).contains(#""s":"0.001""#))
+        }
+
+        @Test func `a batch rejected with one error throws it, and another count of statuses is unexpected`() async {
+            let order = Hyperliquid.OrderRequest.limit(.buy, "BTC", price: 1, size: 1)
+            let rejected = Self.transport(Self.meta, #"{"status":"ok","response":{"type":"order","data":{"statuses":[{"error":"Order has invalid size."}]}}}"#)
+            await #expect {
+                try await OrderRequests.test(rejected).place([order, order])
+            } throws: { error in
+                guard let error = error as? HyperliquidError else { return false }
+                return error.kind == .actionRejected && error.message == "Order has invalid size."
+            }
+            let missing = Self.transport(Self.meta, #"{"status":"ok","response":{"type":"order","data":{"statuses":[{"resting":{"oid":1}}]}}}"#)
+            await #expect {
+                try await OrderRequests.test(missing).place([order, order])
+            } throws: { error in
+                guard let error = error as? HyperliquidError else { return false }
+                return error.kind == .unexpectedResponse && error.message == "1 statuses for 2 orders" && error.nonce != nil
+            }
+        }
+
+        @Test func `a nonce spent by invalidating is never handed out again`() async throws {
+            let transport = Self.transport(Self.accepted, Self.meta, Self.resting)
+            let order = OrderRequests.test(transport, nonce: 1_000)
+            try await order.invalidate(nonce: 5_000)
+            _ = try await order.place([.limit(.buy, "BTC", price: 1, size: 1)])
+            #expect(try await Self.exchangeBody(transport).contains(#""nonce":5001,"#))
+        }
+
         @Test func `invalidating a nonce signs a no-op with that nonce`() async throws {
             let transport = Self.transport(Self.accepted)
             try await OrderRequests.test(transport, nonce: 5).invalidate(nonce: 1_700_000_000_123)

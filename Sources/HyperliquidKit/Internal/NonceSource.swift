@@ -27,4 +27,11 @@ actor NonceSource {
         last[key] = nonce
         return nonce
     }
+
+    /// Records a nonce the app chose, such as one it spends, so the signer's next nonce is higher.
+    func record(_ nonce: UInt64, for signer: Hyperliquid.Address, on network: Hyperliquid.Network) -> UInt64 {
+        let key = Key(signer: signer, network: network)
+        last[key] = max(last[key] ?? 0, nonce)
+        return nonce
+    }
 }

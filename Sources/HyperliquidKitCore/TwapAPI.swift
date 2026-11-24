@@ -29,7 +29,7 @@ extension Hyperliquid {
         /// Places a TWAP order. (`twapOrder`)
         ///
         /// A rejected TWAP doesn't throw: its result carries Hyperliquid's reason. A duration that isn't
-        /// a whole number of minutes, or a size with more than 8 decimals, throws
+        /// a whole number of minutes, or a size that rounding to 8 decimals would change, throws
         /// ``ClientError/Reason/invalidRequest`` before anything is sent.
         ///
         /// - Parameters:

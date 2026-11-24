@@ -45,8 +45,8 @@ extension Hyperliquid {
         /// Adds margin to an isolated position, or removes it when `amount` is negative, in USD.
         /// (`updateIsolatedMargin`)
         ///
-        /// An amount with more than 6 decimals, or one too large to send, throws
-        /// ``ClientError/Reason/invalidRequest`` before anything is sent: it is rejected, not rounded.
+        /// An amount that is 0.001 millionths or more from a whole number of millionths of a dollar, or
+        /// one too large to send, throws ``ClientError/Reason/invalidRequest`` before anything is sent.
         ///
         /// - Parameters:
         ///   - coin: The perpetual of the isolated position.
@@ -57,7 +57,7 @@ extension Hyperliquid {
         /// Changes the position's isolated margin to target `leverage` instead of a USD amount.
         /// (`topUpIsolatedOnlyMargin`)
         ///
-        /// A leverage with more than 8 decimals throws ``ClientError/Reason/invalidRequest`` before
+        /// A leverage that rounding to 8 decimals would change throws ``ClientError/Reason/invalidRequest`` before
         /// anything is sent.
         ///
         /// - Parameters:

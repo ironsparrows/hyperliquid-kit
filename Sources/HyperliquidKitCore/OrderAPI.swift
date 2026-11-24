@@ -57,8 +57,9 @@ extension Hyperliquid {
         ///
         /// Each order gets its own result: a rejected order doesn't throw. The call throws only when
         /// Hyperliquid rejects the whole batch. An order whose price, size or trigger price has more
-        /// than 8 decimals throws ``ClientError/Reason/invalidRequest`` before anything is sent: it is
-        /// rejected, not rounded. A market order reads its coin's mid price first, once per perp DEX,
+        /// than 8 decimals is rounded to 8 when that moves it by less than 1e-12, which absorbs a
+        /// floating-point literal's error, and otherwise throws ``ClientError/Reason/invalidRequest``
+        /// before anything is sent. A market order reads its coin's mid price first, once per perp DEX,
         /// and throws ``ClientError/Reason/noMidPrice`` without one, or
         /// ``ClientError/Reason/invalidRequest`` for slippage below 0 or at 100 % or more.
         ///
@@ -104,7 +105,7 @@ extension Hyperliquid {
 
         /// Replaces orders: each is canceled and its new version placed. (`batchModify`)
         ///
-        /// A new version whose price, size or trigger price has more than 8 decimals, or that is a market
+        /// A new version whose price, size or trigger price rounding to 8 decimals would change, or that is a market
         /// order, throws ``ClientError/Reason/invalidRequest`` before anything is sent.
         ///
         /// - Parameters:
