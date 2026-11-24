@@ -25,7 +25,7 @@ extension HyperliquidKitTests.LiveTradingTests {
         /// A BTC size worth about `dollars` at the mid price.
         private func size(worth dollars: Decimal) async throws -> Decimal {
             let mid = try #require(try await client.market.mids()["BTC"])
-            let sizeDecimals = try #require(try await client.market.perpetuals().first { $0.name == "BTC" }).sizeDecimals
+            let sizeDecimals = try #require(try await client.market.perpetuals().first { $0.coin == "BTC" }).sizeDecimals
             var size = Decimal()
             var exact = dollars / mid
             NSDecimalRound(&size, &exact, sizeDecimals, .up)

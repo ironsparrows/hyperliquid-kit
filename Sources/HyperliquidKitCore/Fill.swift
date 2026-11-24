@@ -71,6 +71,8 @@ extension Hyperliquid.Fill {
         public static let closeLong = Self(rawValue: "Close Long")
         public static let openShort = Self(rawValue: "Open Short")
         public static let closeShort = Self(rawValue: "Close Short")
+        /// A spot buy.
+        public static let buy = Self(rawValue: "Buy")
         /// A spot sell.
         public static let sell = Self(rawValue: "Sell")
         public static let settlement = Self(rawValue: "Settlement")

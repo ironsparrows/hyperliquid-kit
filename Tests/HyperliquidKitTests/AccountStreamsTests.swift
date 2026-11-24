@@ -339,7 +339,7 @@ extension HyperliquidKitTests {
             )
             await session.push(#"{"channel":"notification","data":{"notification":"Resting order filled: Sold 6.7 HYPE at $61.819"}}"#)
             #expect(try await state.next()?.withdrawable == Decimal(string: "565.136441"))
-            #expect(try await pending.next()?.first?.details?.originalSize == Decimal(string: "27.73"))
+            #expect(try await pending.next()?.first?.originalSize == Decimal(string: "27.73"))
             #expect(try await limits.next()?.leverage == .cross(3))
             #expect(try await balances.next()?.first?.token == "USDC")
             #expect(try await notifications.next() == "Resting order filled: Sold 6.7 HYPE at $61.819")

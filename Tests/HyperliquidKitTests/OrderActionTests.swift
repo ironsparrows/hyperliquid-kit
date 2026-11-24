@@ -228,7 +228,7 @@ extension HyperliquidKitTests {
             #expect(results.map(\.status) == [.resting, .filled, .rejected, .init(rawValue: "waitingForTrigger")])
             #expect(results[0].clientID == (try Hyperliquid.ClientOrderID("0x0000000000000000000000000000000a")))
             #expect(results[1].filledSize == Decimal(string: "0.02") && results[1].averagePrice == Decimal(string: "1891.4"))
-            #expect(results[2].message == "Order must have minimum value of $10.")
+            #expect(results[2].error == "Order must have minimum value of $10.")
         }
 
         @Test func `one status for several orders throws, since it can't be matched to them`() async {

@@ -11,6 +11,8 @@ extension Hyperliquid {
         public let limitPrice: Decimal
         /// The size still open, in the base coin.
         public let size: Decimal
+        /// The size when the order was placed, when Hyperliquid sends it.
+        public let originalSize: Decimal?
         public let id: OrderID
         /// When the order was placed.
         public let time: Date
@@ -21,13 +23,14 @@ extension Hyperliquid {
         public let details: Details?
 
         public init(
-            coin: Coin, side: Side, limitPrice: Decimal, size: Decimal, id: OrderID, time: Date,
-            clientID: ClientOrderID? = nil, details: Details? = nil
+            coin: Coin, side: Side, limitPrice: Decimal, size: Decimal, originalSize: Decimal? = nil, id: OrderID,
+            time: Date, clientID: ClientOrderID? = nil, details: Details? = nil
         ) {
             self.coin = coin
             self.side = side
             self.limitPrice = limitPrice
             self.size = size
+            self.originalSize = originalSize
             self.id = id
             self.time = time
             self.clientID = clientID
@@ -37,11 +40,9 @@ extension Hyperliquid {
 }
 
 extension Hyperliquid.Order {
-    /// How an order was placed: its type, original size, trigger and linked orders.
+    /// How an order was placed: its type, trigger and linked orders.
     public struct Details: Hashable, Sendable {
         public let kind: Kind
-        /// The size when the order was placed.
-        public let originalSize: Decimal
         /// How long the order rests, when Hyperliquid sends it.
         public let timeInForce: Hyperliquid.TimeInForce?
         public let reduceOnly: Bool
@@ -55,12 +56,11 @@ extension Hyperliquid.Order {
         public let children: [Hyperliquid.Order]
 
         public init(
-            kind: Kind, originalSize: Decimal, timeInForce: Hyperliquid.TimeInForce?, reduceOnly: Bool,
+            kind: Kind, timeInForce: Hyperliquid.TimeInForce?, reduceOnly: Bool,
             isTrigger: Bool, triggerPrice: Decimal, triggerCondition: String, isPositionTakeProfitStopLoss: Bool,
             children: [Hyperliquid.Order] = []
         ) {
             self.kind = kind
-            self.originalSize = originalSize
             self.timeInForce = timeInForce
             self.reduceOnly = reduceOnly
             self.isTrigger = isTrigger
@@ -87,7 +87,7 @@ extension Hyperliquid.Order {
 
 extension Hyperliquid.Order: Decodable {
     private enum CodingKeys: String, CodingKey {
-        case coin, side, limitPx, sz, oid, timestamp, cloid, orderType
+        case coin, side, limitPx, sz, origSz, oid, timestamp, cloid, orderType
     }
 
     /// The frontend form adds `orderType` and the other ``Details`` fields to the plain form.
@@ -97,6 +97,7 @@ extension Hyperliquid.Order: Decodable {
         side = try container.decode(Hyperliquid.Side.self, forKey: .side)
         limitPrice = try container.decode(WireDecimal.self, forKey: .limitPx).value
         size = try container.decode(WireDecimal.self, forKey: .sz).value
+        originalSize = try container.decodeIfPresent(WireDecimal.self, forKey: .origSz)?.value
         id = try container.decode(Hyperliquid.OrderID.self, forKey: .oid)
         time = try container.decode(WireDate.self, forKey: .timestamp).value
         clientID = try container.decodeIfPresent(Hyperliquid.ClientOrderID.self, forKey: .cloid)
@@ -106,13 +107,12 @@ extension Hyperliquid.Order: Decodable {
 
 extension Hyperliquid.Order.Details: Decodable {
     private enum CodingKeys: String, CodingKey {
-        case orderType, origSz, tif, reduceOnly, isTrigger, triggerPx, triggerCondition, isPositionTpsl, children
+        case orderType, tif, reduceOnly, isTrigger, triggerPx, triggerCondition, isPositionTpsl, children
     }
 
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         kind = try container.decode(Hyperliquid.Order.Kind.self, forKey: .orderType)
-        originalSize = try container.decode(WireDecimal.self, forKey: .origSz).value
         timeInForce = try container.decodeIfPresent(Hyperliquid.TimeInForce.self, forKey: .tif)
         reduceOnly = try container.decode(Bool.self, forKey: .reduceOnly)
         isTrigger = try container.decode(Bool.self, forKey: .isTrigger)

@@ -5,7 +5,8 @@ extension Hyperliquid {
     ///
     /// `.percent(5)` and `.fraction(0.05)` are the same slippage.
     public struct Slippage: Hashable, Sendable {
-        package let fraction: Decimal
+        /// The slippage as a fraction of the price, such as `0.05` for 5 %.
+        public let fraction: Decimal
 
         private init(fraction: Decimal) {
             self.fraction = fraction

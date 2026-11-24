@@ -47,8 +47,8 @@ extension Hyperliquid {
         func portfolio(for user: Address?) async throws -> Portfolio
 
         /// Changes to the account's balances other than funding, from `start` to `end`, or to now when
-        /// `end` is `nil`, oldest first. A response holds a limited number of updates (2000 were seen):
-        /// to read further, ask again from the last one's time. (`userNonFundingLedgerUpdates`)
+        /// `end` is `nil`, oldest first. Hyperliquid documents a response as holding at most 500
+        /// elements: to read further, ask again from the last one's time. (`userNonFundingLedgerUpdates`)
         func ledger(from start: Date, to end: Date?, for user: Address?) async throws -> [LedgerUpdate]
     }
 }

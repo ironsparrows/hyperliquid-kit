@@ -13,7 +13,7 @@ extension HyperliquidKitTests {
 
         @Test func `the first perp DEX's perpetuals and contexts decode`() async throws {
             let perpetuals = try await market.perpetuals()
-            #expect(perpetuals.first?.name == "BTC")
+            #expect(perpetuals.first?.coin == "BTC")
             let pairs = try await market.perpetualContexts()
             #expect(pairs.count == perpetuals.count)
         }
@@ -23,7 +23,7 @@ extension HyperliquidKitTests {
             let dex = try #require(dexes.first?.dex)
             let perpetuals = try await market.perpetuals(dex: dex)
             #expect(try await market.allPerpetuals().count >= perpetuals.count)
-            let coin = try #require(perpetuals.first?.name)
+            let coin = try #require(perpetuals.first?.coin)
             let directory = AssetDirectory(info: InfoClient(network: .mainnet, transport: AsyncHTTPClientTransport(), timeout: nil))
             #expect(try await directory.asset(for: coin).id == 110_000)
             #expect(try await directory.asset(for: "BTC").id == 0)

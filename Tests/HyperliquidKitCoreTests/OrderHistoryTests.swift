@@ -36,7 +36,7 @@ extension HyperliquidKitCoreTests {
             #expect(details.triggerPrice == Decimal(string: "10.004"))
             #expect(details.triggerCondition == "Price above 10.004")
             #expect(details.timeInForce == nil)
-            #expect(details.originalSize == Decimal(string: "12.5"))
+            #expect(order.originalSize == Decimal(string: "12.5"))
             let documented = try decode(
                 Hyperliquid.Order.self,
                 #"{"coin":"BTC","isPositionTpsl":false,"isTrigger":false,"limitPx":"29792.0","oid":91490942,"orderType":"Limit","origSz":"5.0","reduceOnly":false,"side":"A","sz":"5.0","timestamp":1681247412573,"triggerCondition":"N/A","triggerPx":"0.0"}"#

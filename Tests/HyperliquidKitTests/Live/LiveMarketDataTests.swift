@@ -30,14 +30,14 @@ extension HyperliquidKitTests {
             _ = try await market.openInterestCapped()
             #expect(!(try await market.predictedFundings()).isEmpty)
             let dex = try #require(try await market.perpDexs().first?.dex)
-            #expect(try await market.perpDexLimits(dex) != nil)
-            _ = try await market.perpDexStatus(dex)
+            #expect(try await market.perpDexLimits(dex: dex) != nil)
+            _ = try await market.perpDexStatus(dex: dex)
             _ = try await market.exchangeStatus()
         }
 
         @Test func `a builder-deployed perpetual's book decodes`() async throws {
             let dex = try #require(try await market.perpDexs().first?.dex)
-            let coin = try #require(try await market.perpetuals(dex: dex).first?.name)
+            let coin = try #require(try await market.perpetuals(dex: dex).first?.coin)
             #expect(try await market.orderBook(coin).coin == coin)
         }
     }

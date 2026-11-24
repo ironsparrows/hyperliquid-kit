@@ -60,7 +60,7 @@ decimals instead.
 
 ```swift
 guard let mid = try await client.market.mids()["BTC"],
-    let btc = try await client.market.perpetuals().first(where: { $0.name == "BTC" })
+    let btc = try await client.market.perpetuals().first(where: { $0.coin == "BTC" })
 else { return }
 
 // A buy 10% under the mid price rests in the book. BTC's price in whole dollars is always
@@ -74,7 +74,7 @@ let placed = try await client.order.place([
     .limit(.buy, "BTC", price: price, size: size, timeInForce: .addLiquidityOnly),
 ])
 guard let id = placed.first?.orderID else {
-    print("Not placed:", placed.first?.message ?? "")
+    print("Not placed:", placed.first?.error ?? "")
     return
 }
 let canceled = try await client.order.cancel([.init(id, coin: "BTC")])
@@ -83,7 +83,7 @@ print(canceled.first?.isCanceled == true ? "Canceled" : canceled.first?.error ??
 
 Each order gets its own ``Hyperliquid/PlacementResult``, and each cancel its own
 ``Hyperliquid/CancelResult``: a rejected order or a failed cancel doesn't throw, and its result
-carries Hyperliquid's message. ``Hyperliquid/OrderRequest`` also builds trigger orders, and
+carries Hyperliquid's reason. ``Hyperliquid/OrderRequest`` also builds trigger orders, and
 ``Hyperliquid/OrderAPI/modify(_:alwaysPlace:expiresAfter:)`` replaces orders in place.
 
 ### Open and close a position
@@ -141,14 +141,13 @@ start the streams again, and read anything you may have missed.
 
 A call throws ``HyperliquidError`` when Hyperliquid refuses it or answers in a way the client can't
 use, and ``Hyperliquid/ClientError`` when the client couldn't complete it, such as when Hyperliquid
-doesn't answer in time; a read whose response the client can't decode throws `DecodingError`. Given
-an order `order`:
+doesn't answer in time. Given an order `order`:
 
 ```swift
 do {
     // A rejected order doesn't throw: its result says why.
     for result in try await client.order.place([order]) where result.status == .rejected {
-        print("Hyperliquid rejected the order:", result.message ?? "")
+        print("Hyperliquid rejected the order:", result.error ?? "")
     }
 } catch let error as HyperliquidError where error.kind == .actionRejected {
     print("Hyperliquid rejected the action:", error.message ?? "")

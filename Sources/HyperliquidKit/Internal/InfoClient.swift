@@ -38,8 +38,15 @@ struct InfoClient: Sendable {
                 body: response.body
             )
         }
-        // 5. Decode off the caller's actor: some responses are tens of kilobytes.
-        return try await Self.decode(Response.self, from: response.body)
+        // 5. Decode off the caller's actor: some responses are tens of kilobytes. An answer of another
+        //    shape is unexpected, as for actions.
+        do {
+            return try await Self.decode(Response.self, from: response.body)
+        } catch let error as DecodingError {
+            throw HyperliquidError(
+                .unexpectedResponse, message: "\(error)", httpStatus: response.status, body: response.body
+            )
+        }
     }
 
     /// Whether the body is JSON `null`, allowing whitespace around it.

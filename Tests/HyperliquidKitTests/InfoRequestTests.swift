@@ -33,9 +33,12 @@ extension HyperliquidKitTests {
             }
         }
 
-        @Test func `a body that doesn't decode throws the decoding error`() async {
-            await #expect(throws: DecodingError.self) {
+        @Test func `a body that doesn't decode throws an unexpected response with the body`() async {
+            await #expect {
                 try await InfoClient.test(FakeTransport(json: "{}")).send(.perpDexs)
+            } throws: { error in
+                guard let error = error as? HyperliquidError else { return false }
+                return error.kind == .unexpectedResponse && error.body == Data("{}".utf8) && error.httpStatus == 200
             }
         }
 

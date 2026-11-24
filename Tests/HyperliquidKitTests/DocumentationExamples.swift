@@ -47,7 +47,7 @@ enum DocumentationExamples {
 
     static func placeAndCancelOrder(client: Hyperliquid.Client) async throws {
         guard let mid = try await client.market.mids()["BTC"],
-            let btc = try await client.market.perpetuals().first(where: { $0.name == "BTC" })
+            let btc = try await client.market.perpetuals().first(where: { $0.coin == "BTC" })
         else { return }
 
         // A buy 10% under the mid price rests in the book. BTC's price in whole dollars is always
@@ -61,7 +61,7 @@ enum DocumentationExamples {
             .limit(.buy, "BTC", price: price, size: size, timeInForce: .addLiquidityOnly),
         ])
         guard let id = placed.first?.orderID else {
-            print("Not placed:", placed.first?.message ?? "")
+            print("Not placed:", placed.first?.error ?? "")
             return
         }
         let canceled = try await client.order.cancel([.init(id, coin: "BTC")])
@@ -96,7 +96,7 @@ enum DocumentationExamples {
         do {
             // A rejected order doesn't throw: its result says why.
             for result in try await client.order.place([order]) where result.status == .rejected {
-                print("Hyperliquid rejected the order:", result.message ?? "")
+                print("Hyperliquid rejected the order:", result.error ?? "")
             }
         } catch let error as HyperliquidError where error.kind == .actionRejected {
             print("Hyperliquid rejected the action:", error.message ?? "")

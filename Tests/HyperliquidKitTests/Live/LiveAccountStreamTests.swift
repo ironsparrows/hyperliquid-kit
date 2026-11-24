@@ -36,7 +36,7 @@ extension HyperliquidKitTests.LiveTradingTests {
             #expect(try await stream.twapStates().first { _ in true } != nil)
 
             let mid = try #require(try await client.market.mids()["BTC"])
-            let sizeDecimals = try #require(try await client.market.perpetuals().first { $0.name == "BTC" }).sizeDecimals
+            let sizeDecimals = try #require(try await client.market.perpetuals().first { $0.coin == "BTC" }).sizeDecimals
             var size = Decimal()
             var exact = Decimal(11) / mid
             NSDecimalRound(&size, &exact, sizeDecimals, .up)

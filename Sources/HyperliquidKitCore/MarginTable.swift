@@ -3,7 +3,8 @@ public import Foundation
 extension Hyperliquid {
     /// The leverage a perpetual allows at each position size.
     public struct MarginTable: Hashable, Sendable {
-        public let description: String
+        /// Hyperliquid's name for the table, such as `"tiered 10x"`; often empty.
+        public let name: String
         /// The tiers, from the smallest position up.
         public let tiers: [Tier]
 
@@ -19,24 +20,14 @@ extension Hyperliquid {
             }
         }
 
-        public init(description: String, tiers: [Tier]) {
-            self.description = description
+        public init(name: String, tiers: [Tier]) {
+            self.name = name
             self.tiers = tiers
         }
     }
 }
 
 // MARK: - Wire
-
-extension Hyperliquid.MarginTable {
-    /// The table with this ID: one of `tables`, or for an ID under 50, which Hyperliquid doesn't
-    /// list, one tier from zero at a leverage equal to the ID.
-    static func resolving(_ id: Int, in tables: [Int: Self]) -> Self? {
-        if let table = tables[id] { return table }
-        guard (1..<50).contains(id) else { return nil }
-        return Self(description: "", tiers: [Tier(lowerBound: 0, maxLeverage: id)])
-    }
-}
 
 extension Hyperliquid.MarginTable: Decodable {
     private enum CodingKeys: String, CodingKey {
@@ -46,7 +37,7 @@ extension Hyperliquid.MarginTable: Decodable {
 
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        description = try container.decode(String.self, forKey: .description)
+        name = try container.decode(String.self, forKey: .description)
         tiers = try container.decode([Tier].self, forKey: .tiers)
     }
 }

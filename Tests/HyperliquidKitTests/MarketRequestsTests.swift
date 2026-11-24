@@ -14,7 +14,7 @@ extension HyperliquidKitTests {
         @Test func `perpetuals read the perp DEX's meta`() async throws {
             let transport = FakeTransport(json: Self.btcMeta)
             let perpetuals = try await Self.market(transport).perpetuals()
-            #expect(perpetuals.map(\.name) == ["BTC"])
+            #expect(perpetuals.map(\.coin) == ["BTC"])
             #expect(await transport.bodies == [#"{"type":"meta","dex":""}"#])
         }
 
@@ -22,7 +22,7 @@ extension HyperliquidKitTests {
             let transport = FakeTransport(json: "[" + Self.btcMeta + ",[" + Self.context + "]]")
             let pairs = try await Self.market(transport).perpetualContexts(dex: .named("xyz"))
             #expect(pairs.count == 1)
-            #expect(pairs.first?.perpetual.name == "BTC")
+            #expect(pairs.first?.perpetual.coin == "BTC")
             #expect(pairs.first?.context.markPrice == Decimal(string: "14.3161"))
             #expect(pairs.first?.context.impactBidPrice == nil)
             #expect(await transport.bodies == [#"{"type":"metaAndAssetCtxs","dex":"xyz"}"#])
@@ -40,7 +40,7 @@ extension HyperliquidKitTests {
         @Test func `all perpetuals flatten every perp DEX's meta in order`() async throws {
             let transport = FakeTransport(json: "[" + Self.btcMeta + "," + Self.xyzMeta + "]")
             let perpetuals = try await Self.market(transport).allPerpetuals()
-            #expect(perpetuals.map(\.name) == ["BTC", "xyz:XYZ100"])
+            #expect(perpetuals.map(\.coin) == ["BTC", "xyz:XYZ100"])
             #expect(await transport.bodies == [#"{"type":"allPerpMetas"}"#])
         }
 
@@ -182,19 +182,24 @@ extension HyperliquidKitTests {
             #expect(await transport.bodies == [#"{"type":"predictedFundings"}"#])
         }
 
+        @Test func `the first perp DEX has no limits, without a request`() async throws {
+            let transport = FakeTransport()
+            #expect(try await Self.market(transport).perpDexLimits(dex: .first) == nil)
+            #expect(await transport.requests.isEmpty)
+        }
+
         @Test func `perp DEX limits are nil when Hyperliquid answers null`() async throws {
             let transport = FakeTransport(json: "null")
-            #expect(try await Self.market(transport).perpDexLimits(.first) == nil)
-            #expect(await transport.bodies == [#"{"type":"perpDexLimits","dex":""}"#])
+            #expect(try await Self.market(transport).perpDexLimits(dex: .named("xyz")) == nil)
         }
 
         @Test func `perp DEX limits and status send the perp DEX`() async throws {
             let limits = #"{"totalOiCap":"10000000.0","oiSzCapPerPerp":"10000000000.0","maxTransferNtl":"100000000.0","coinToOiCap":[["xyz:XYZ100","100000.0"]]}"#
             let transport = FakeTransport(responses: [.json(limits), .json(#"{"totalNetDeposit":"4103492112.4478230476"}"#)])
             let market = Self.market(transport)
-            let dexLimits = try await market.perpDexLimits(.named("xyz"))
+            let dexLimits = try await market.perpDexLimits(dex: .named("xyz"))
             #expect(dexLimits?.openInterestCaps == ["xyz:XYZ100": Decimal(100_000)])
-            #expect(try await market.perpDexStatus(.named("xyz")).totalNetDeposit == Decimal(string: "4103492112.4478230476"))
+            #expect(try await market.perpDexStatus(dex: .named("xyz")).totalNetDeposit == Decimal(string: "4103492112.4478230476"))
             #expect(await transport.bodies == [
                 #"{"type":"perpDexLimits","dex":"xyz"}"#, #"{"type":"perpDexStatus","dex":"xyz"}"#,
             ])

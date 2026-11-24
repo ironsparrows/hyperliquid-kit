@@ -71,7 +71,13 @@ extension Hyperliquid.AssetContext: Decodable {
         openInterest = try decimal(.openInterest)
         dayNotionalVolume = try decimal(.dayNtlVlm)
         dayBaseVolume = try optionalDecimal(.dayBaseVlm)
+        // `[bid, ask]`, or `null` without a book.
         let impactPrices = try container.decodeIfPresent([WireDecimal].self, forKey: .impactPxs)
+        if let impactPrices, impactPrices.count != 2 {
+            throw DecodingError.dataCorruptedError(
+                forKey: .impactPxs, in: container, debugDescription: "Expected a bid and an ask, got \(impactPrices.count)"
+            )
+        }
         impactBidPrice = impactPrices?.first?.value
         impactAskPrice = impactPrices?.last?.value
     }

@@ -76,11 +76,13 @@ struct MarketRequests: Hyperliquid.MarketAPI {
         try await info.send(.predictedFundings)
     }
 
-    func perpDexLimits(_ dex: Hyperliquid.PerpDex) async throws -> Hyperliquid.PerpDex.Limits? {
-        try await info.send(.perpDexLimits(dex))
+    func perpDexLimits(dex: Hyperliquid.PerpDex) async throws -> Hyperliquid.PerpDex.Limits? {
+        // Hyperliquid doesn't take the first perp DEX's empty name here; it has no limits.
+        guard dex != .first else { return nil }
+        return try await info.send(.perpDexLimits(dex))
     }
 
-    func perpDexStatus(_ dex: Hyperliquid.PerpDex) async throws -> Hyperliquid.PerpDex.Status {
+    func perpDexStatus(dex: Hyperliquid.PerpDex) async throws -> Hyperliquid.PerpDex.Status {
         try await info.send(.perpDexStatus(dex))
     }
 

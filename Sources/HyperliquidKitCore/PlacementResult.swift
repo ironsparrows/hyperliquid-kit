@@ -15,22 +15,22 @@ extension Hyperliquid {
         /// The average fill price, for a filled order.
         public let averagePrice: Decimal?
         /// Hyperliquid's reason, for a rejected order, such as `Order must have minimum value of $10.`
-        public let message: String?
+        public let error: String?
 
         public init(
             status: Status, orderID: OrderID? = nil, clientID: ClientOrderID? = nil, filledSize: Decimal? = nil,
-            averagePrice: Decimal? = nil, message: String? = nil
+            averagePrice: Decimal? = nil, error: String? = nil
         ) {
             self.status = status
             self.orderID = orderID
             self.clientID = clientID
             self.filledSize = filledSize
             self.averagePrice = averagePrice
-            self.message = message
+            self.error = error
         }
 
         /// An order's outcome.
-        public struct Status: RawRepresentable, Hashable, Sendable {
+        public struct Status: RawRepresentable, Hashable, Sendable, Codable {
             public let rawValue: String
             public init(rawValue: String) { self.rawValue = rawValue }
 
@@ -38,7 +38,7 @@ extension Hyperliquid {
             public static let resting = Self(rawValue: "resting")
             /// Filled at once.
             public static let filled = Self(rawValue: "filled")
-            /// Rejected; ``PlacementResult/message`` says why.
+            /// Rejected; ``PlacementResult/error`` says why.
             public static let rejected = Self(rawValue: "error")
         }
     }
@@ -68,7 +68,7 @@ extension Hyperliquid.PlacementResult: Decodable {
         }
         switch value {
         case .message(let message):
-            self.init(status: Status(rawValue: key), message: message)
+            self.init(status: Status(rawValue: key), error: message)
         case .details(let details):
             self.init(
                 status: Status(rawValue: key), orderID: details.oid, clientID: details.cloid,

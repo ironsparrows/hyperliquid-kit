@@ -18,7 +18,7 @@ extension HyperliquidKitTests.LiveTradingTests {
                 account: values.account, signer: try Hyperliquid.PrivateKeySigner(hexKey: values.agentKey)
             )
             let mid = try #require(try await client.market.mids()["BTC"])
-            let sizeDecimals = try #require(try await client.market.perpetuals().first { $0.name == "BTC" }).sizeDecimals
+            let sizeDecimals = try #require(try await client.market.perpetuals().first { $0.coin == "BTC" }).sizeDecimals
             let price = Self.fiveSignificantFigures(mid * Decimal(string: "0.9")!)
             let size = Self.rounded(Decimal(11) / price, scale: sizeDecimals, .up)
 

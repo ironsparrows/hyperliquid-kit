@@ -6,7 +6,7 @@ extension Hyperliquid {
         public let mode: MarginMode
         public let value: Int
 
-        public init(mode: MarginMode, value: Int) {
+        package init(mode: MarginMode, value: Int) {
             self.mode = mode
             self.value = value
         }

@@ -74,11 +74,10 @@ extension Hyperliquid.ClientError {
             "invalidClientOrderID", summary: "The text isn't a client order ID"
         )
 
-        /// The request can't be sent as built; ``Hyperliquid/ClientError/message`` names the field, such as
-        /// a price with more decimals than an action can carry (8).
-        public static let invalidRequest = Self(
-            "invalidRequest", summary: "The request can't be sent to Hyperliquid as built"
-        )
+        /// The request can't be sent as built, such as a price with more decimals than an action can
+        /// carry, or a stream that conflicts with one already streaming; ``Hyperliquid/ClientError/message``
+        /// says which.
+        public static let invalidRequest = Self("invalidRequest", summary: "The request can't be sent as built")
 
         // MARK: Signing
 
@@ -103,8 +102,11 @@ extension Hyperliquid.ClientError {
 
         // MARK: Markets
 
-        /// The coin isn't in Hyperliquid's list of markets for its perp DEX.
-        public static let unknownCoin = Self("unknownCoin", summary: "Hyperliquid lists no market for the coin")
+        /// The coin isn't in Hyperliquid's list of markets for its perp DEX, or the perp DEX isn't in its
+        /// list of perp DEXs.
+        public static let unknownCoin = Self(
+            "unknownCoin", summary: "Hyperliquid lists no market for the coin, or no such perp DEX"
+        )
         /// The coin is a spot or outcome market, which the client can't trade.
         public static let unsupportedMarket = Self(
             "unsupportedMarket", summary: "The client trades only perpetuals"

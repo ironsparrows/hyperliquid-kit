@@ -23,8 +23,8 @@ extension Hyperliquid {
         func tradingLimits(_ coin: Coin, for user: Address?) async throws -> TradingLimits
 
         /// The funding the account paid or received from `start` to `end`, or to now when `end` is
-        /// `nil`, oldest first. A response holds a limited number of payments: to read further, ask
-        /// again from the last one's time. (`userFunding`)
+        /// `nil`, oldest first. Hyperliquid documents a response as holding at most 500
+        /// payments: to read further, ask again from the last one's time. (`userFunding`)
         func fundingPayments(from start: Date, to end: Date?, for user: Address?) async throws -> [FundingPayment]
 
         // MARK: Actions

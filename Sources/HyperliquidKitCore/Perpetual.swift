@@ -2,11 +2,14 @@ extension Hyperliquid {
     /// A perpetual market and its trading rules.
     public struct Perpetual: Hashable, Sendable {
         /// The market's name; on a builder-deployed perp DEX it starts with the DEX's name.
-        public let name: Coin
+        public let coin: Coin
         /// How many decimals a size may have.
         public let sizeDecimals: Int
         public let maxLeverage: Int
-        /// The leverage allowed at each position size, or `nil` when Hyperliquid names no table.
+        /// The ID of the margin table Hyperliquid names for the market, when it names one.
+        public let marginTableID: Int?
+        /// The leverage allowed at each position size, when Hyperliquid lists the named table; it
+        /// doesn't list every one, such as most IDs under 50.
         public let marginTable: MarginTable?
         /// The margining the market restricts positions to, or `nil` when it allows cross margin.
         public let marginMode: MarginMode?
@@ -14,10 +17,11 @@ extension Hyperliquid {
         public let isDelisted: Bool
 
         public init(
-            name: Coin, sizeDecimals: Int, maxLeverage: Int, marginTable: MarginTable?, marginMode: MarginMode? = nil,
-            isDelisted: Bool = false
+            coin: Coin, sizeDecimals: Int, maxLeverage: Int, marginTableID: Int? = nil, marginTable: MarginTable? = nil,
+            marginMode: MarginMode? = nil, isDelisted: Bool = false
         ) {
-            self.name = name
+            self.coin = coin
+            self.marginTableID = marginTableID
             self.sizeDecimals = sizeDecimals
             self.maxLeverage = maxLeverage
             self.marginTable = marginTable
@@ -62,19 +66,12 @@ package struct PerpetualMetadata: Decodable, Sendable {
         let tables = try container.decode([NumberedTable].self, forKey: .marginTables)
         let tablesByID = Dictionary(tables.map { ($0.id, $0.table) }) { first, _ in first }
         perpetuals = try container.decode([Entry].self, forKey: .universe).map { entry in
-            let marginTable = try entry.marginTableId.map { id in
-                guard let table = Hyperliquid.MarginTable.resolving(id, in: tablesByID) else {
-                    throw DecodingError.dataCorruptedError(
-                        forKey: .marginTables, in: container, debugDescription: "No margin table \(id) for \(entry.name)"
-                    )
-                }
-                return table
-            }
-            return Hyperliquid.Perpetual(
-                name: entry.name,
+            Hyperliquid.Perpetual(
+                coin: entry.name,
                 sizeDecimals: entry.szDecimals,
                 maxLeverage: entry.maxLeverage,
-                marginTable: marginTable,
+                marginTableID: entry.marginTableId,
+                marginTable: entry.marginTableId.flatMap { tablesByID[$0] },
                 marginMode: entry.marginMode,
                 isDelisted: entry.isDelisted ?? false
             )

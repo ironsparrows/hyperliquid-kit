@@ -24,7 +24,7 @@ Prices, sizes and amounts are `Decimal`, read exactly as Hyperliquid sends them;
 coin traded. Every call that needs Hyperliquid's answer is `async`. It throws ``HyperliquidError``
 when Hyperliquid refuses it or answers in a way the client can't use, and
 ``Hyperliquid/ClientError`` when the client couldn't complete it; besides those, cancelling throws
-`CancellationError`, and a read whose response the client can't decode throws `DecodingError`.
+`CancellationError`. A stream push the client can't read ends its stream with `DecodingError`.
 
 The client covers perpetuals, on the first perp DEX and on builder-deployed ones. Spot markets
 appear only where Hyperliquid mixes them into an account's results, mid prices or the prices

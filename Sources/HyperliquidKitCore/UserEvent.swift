@@ -5,7 +5,8 @@ extension Hyperliquid {
     /// liquidation, or orders the account didn't cancel itself.
     ///
     /// An event of a kind this type doesn't model arrives as ``unknown(kind:)``, so it is never lost;
-    /// later versions of this type may model it with a case of its own.
+    /// later versions of this type may model it with a case of its own, so give a `switch` over it a
+    /// `default`.
     public enum UserEvent: Hashable, Sendable {
         /// Fills of the account's orders.
         case fills([Fill])

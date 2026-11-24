@@ -40,6 +40,11 @@ extension Hyperliquid {
         }
 
         /// A limit order. A reduce-only order never increases a position.
+        ///
+        /// Hyperliquid places orders that rest until canceled, rest only as makers, or cancel what
+        /// doesn't fill at once: ``TimeInForce/goodTilCanceled``, ``TimeInForce/addLiquidityOnly`` and
+        /// ``TimeInForce/immediateOrCancel``. It rejects the other times in force, which only describe
+        /// orders it reports.
         public static func limit(
             _ side: Side, _ coin: Coin, price: Decimal, size: Decimal, timeInForce: TimeInForce = .goodTilCanceled,
             reduceOnly: Bool = false, clientID: ClientOrderID? = nil
