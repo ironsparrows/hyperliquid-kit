@@ -25,6 +25,16 @@ extension HyperliquidKitTests {
                 Hyperliquid.TradeID.self, Hyperliquid.FundingRate.self, Hyperliquid.PredictedFunding.self,
                 Hyperliquid.PredictedFunding.Venue.self, Hyperliquid.PredictedFunding.Exchange.self,
                 Hyperliquid.PerpDex.Limits.self, Hyperliquid.PerpDex.Status.self, Hyperliquid.ExchangeStatus.self,
+                (any Hyperliquid.AccountAPI).self, (any Hyperliquid.PositionAPI).self, Hyperliquid.Leverage.self,
+                Hyperliquid.PerpetualState.self, Hyperliquid.PerpetualState.MarginSummary.self,
+                Hyperliquid.PerpetualState.Position.self, Hyperliquid.PerpetualState.CumulativeFunding.self,
+                Hyperliquid.Balance.self, Hyperliquid.TradingLimits.self, Hyperliquid.Fees.self,
+                Hyperliquid.Fees.DailyVolume.self, Hyperliquid.Fees.Schedule.self, Hyperliquid.Fees.VolumeTier.self,
+                Hyperliquid.Fees.MarketMakerTier.self, Hyperliquid.Fees.StakingDiscountTier.self,
+                Hyperliquid.RateLimit.self, Hyperliquid.AccountRole.self, Hyperliquid.AccountRole.Kind.self,
+                Hyperliquid.SubAccount.self, Hyperliquid.Portfolio.self, Hyperliquid.Portfolio.Window.self,
+                Hyperliquid.Portfolio.History.self, Hyperliquid.Portfolio.Sample.self, Hyperliquid.APIWallet.self,
+                Hyperliquid.FundingPayment.self, Hyperliquid.LedgerUpdate.self, Hyperliquid.LedgerUpdate.Kind.self,
             ]
             _ = types
         }

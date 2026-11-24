@@ -218,9 +218,3 @@ extension HyperliquidKitTests {
         }
     }
 }
-
-extension TransportResponse {
-    fileprivate static func json(_ text: String) -> Self {
-        Self(status: 200, body: Data(text.utf8))
-    }
-}

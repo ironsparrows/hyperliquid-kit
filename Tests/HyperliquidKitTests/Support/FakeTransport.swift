@@ -30,6 +30,13 @@ actor FakeTransport: HTTPTransport {
     }
 }
 
+extension TransportResponse {
+    /// A 200 answer with this JSON body.
+    static func json(_ text: String) -> Self {
+        Self(status: 200, body: Data(text.utf8))
+    }
+}
+
 extension InfoClient {
     static func test(_ transport: some HTTPTransport, network: Hyperliquid.Network = .mainnet) -> InfoClient {
         InfoClient(network: network, transport: transport, timeout: nil)

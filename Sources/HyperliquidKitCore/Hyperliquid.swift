@@ -10,5 +10,7 @@ extension Hyperliquid {
     /// `Hyperliquid.Client` conforms. Depend on this protocol, or on one domain's protocol, to substitute a mock.
     public protocol API: Sendable {
         var market: any MarketAPI { get }
+        var account: any AccountAPI { get }
+        var position: any PositionAPI { get }
     }
 }

@@ -7,16 +7,24 @@ extension Hyperliquid {
     /// shares.
     public final class Client: API {
         public let market: any MarketAPI
+        public let account: any AccountAPI
+        public let position: any PositionAPI
 
         /// Creates a client for the configuration's network.
-        public convenience init(configuration: Configuration = .init()) {
-            self.init(configuration: configuration, transport: AsyncHTTPClientTransport())
+        ///
+        /// - Parameter account: The account that account and position reads use when they are given
+        ///   none. Pass the account's own address, not an API wallet's: an API wallet's address reads
+        ///   as an empty account.
+        public convenience init(account: Hyperliquid.Address? = nil, configuration: Configuration = .init()) {
+            self.init(account: account, configuration: configuration, transport: AsyncHTTPClientTransport())
         }
 
-        init(configuration: Configuration, transport: any HTTPTransport) {
+        init(account: Hyperliquid.Address? = nil, configuration: Configuration, transport: any HTTPTransport) {
             let info = InfoClient(network: configuration.network, transport: transport, timeout: configuration.timeout)
             let directory = AssetDirectory(info: info)
             market = MarketRequests(info: info, directory: directory)
+            self.account = AccountRequests(info: info, account: account)
+            position = PositionRequests(info: info, directory: directory, account: account)
         }
     }
 }
