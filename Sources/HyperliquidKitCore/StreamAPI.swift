@@ -22,6 +22,9 @@ extension Hyperliquid {
     ///   ``ClientError/Reason/unsupportedMarket`` for a spot or outcome coin, checked before subscribing;
     /// - with ``ClientError/Reason/missingAccount`` for an account stream given no `user` on a client
     ///   without an account, before subscribing;
+    /// - with ``ClientError/Reason/invalidRequest`` for a second stream of book updates, prices or
+    ///   asset contexts while one lasts: their pushes build on the snapshot that only the first stream
+    ///   gets;
     /// - with ``ClientError/Reason/invalidRequest`` for an order book of a coin already streaming at
     ///   another precision, fills already streaming with the other `aggregateByTime`, or order
     ///   updates, events or notifications already streaming for another account: Hyperliquid's
@@ -64,6 +67,42 @@ extension Hyperliquid {
         /// A perpetual's market state: prices, funding and open interest; a slow reader gets only the
         /// latest. (`activeAssetCtx`)
         func assetContext(_ coin: Coin) -> AsyncThrowingStream<AssetContext, any Error>
+
+        // MARK: Compressed market feeds
+
+        /// A perpetual's book, at most 20 levels per side, kept up to date from Hyperliquid's diffs:
+        /// the whole book after the snapshot sent on subscribing and after each diff; every diff is
+        /// applied, and a slow reader gets only the latest book. (`l2`)
+        ///
+        /// Diffs don't carry order counts, so a level a diff adds or changes has no
+        /// ``OrderBook/Level/orderCount``. A diff that doesn't fit the book ends the stream with
+        /// ``HyperliquidError`` of kind `unexpectedResponse`, and one that can't be read with the
+        /// decoding error; start the stream again for a new snapshot. One stream of a coin's book
+        /// updates runs at a time.
+        func orderBookUpdates(_ coin: Coin, precision: OrderBook.Precision) -> AsyncThrowingStream<OrderBook, any Error>
+
+        /// The mark and mid price of every market Hyperliquid lists, spot and outcome markets included,
+        /// merged from Hyperliquid's updates: all of them in each element; every update is merged,
+        /// and a slow reader gets only the latest. (`fastAssetCtxs`)
+        ///
+        /// The first push after subscribing holds every market. One stream runs at a time. When a
+        /// stream ends and another starts on the same connection, the new one's first element can
+        /// lack markets, from updates sent before its first push.
+        func prices() -> AsyncThrowingStream<[Coin: MarketPrices], any Error>
+
+        /// The market state of every perpetual on every perp DEX, merged from Hyperliquid's updates:
+        /// all of them in each element; every update is merged, and a slow reader gets only the
+        /// latest. (`pac`)
+        ///
+        /// These pushes carry no premium or impact prices, so those are `nil`. Pushes name perpetuals
+        /// by their position in their perp DEX's list, which the client loads in the background when a
+        /// perp DEX first appears: a perpetual appears once Hyperliquid has sent all of its required
+        /// fields and its perp DEX's list has loaded. A perp DEX whose list fails to load stays out
+        /// until the stream starts again, and perpetuals listed after it loaded are left out. A perp
+        /// DEX deployed after the client read the list of perp DEXs can appear here although other
+        /// requests for it throw ``ClientError/Reason/unknownCoin``. One stream runs at a time; as
+        /// with ``prices()``, a stream started right after another ends can begin incomplete.
+        func assetContexts() -> AsyncThrowingStream<[Coin: AssetContext], any Error>
 
         // MARK: Account
 
@@ -143,6 +182,11 @@ extension Hyperliquid.StreamAPI {
     /// A perpetual's book at full precision.
     public func orderBook(_ coin: Hyperliquid.Coin) -> AsyncThrowingStream<Hyperliquid.OrderBook, any Error> {
         orderBook(coin, precision: .full)
+    }
+
+    /// A perpetual's book at full precision, kept up to date from Hyperliquid's diffs.
+    public func orderBookUpdates(_ coin: Hyperliquid.Coin) -> AsyncThrowingStream<Hyperliquid.OrderBook, any Error> {
+        orderBookUpdates(coin, precision: .full)
     }
 
     // MARK: Account

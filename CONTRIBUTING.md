@@ -8,6 +8,8 @@ Swift 6.4 or later. On macOS, Xcode 27.2 or later for the iOS build.
 
 Supported platforms: macOS 13, iOS 16, tvOS 16, visionOS 1 and Linux. watchOS is not supported.
 
+On Linux, the compressed streams decode through the system's zlib, so building needs zlib's development headers, such as `zlib1g-dev` on Debian and Ubuntu.
+
 ## Checks before a change lands
 
 Run them in a clean copy of the repository, so a local settings file and its keys never take part:

@@ -1,8 +1,8 @@
 import Foundation
 import HyperliquidKitCore
 
-/// Live pushes over the client's ``StreamConnection``: market streams here, account streams in
-/// `AccountStreams.swift`.
+/// Live pushes over the client's ``StreamConnection``: market streams here, compressed market feeds
+/// in `MarketFeeds.swift`, account streams in `AccountStreams.swift`.
 struct Streams: Hyperliquid.StreamAPI {
     let connection: StreamConnection
     /// The account that account streams given no user stream.

@@ -43,7 +43,7 @@ extension Hyperliquid {
 
 extension Hyperliquid.Coin {
     /// A kind of market. The client trades and reads market data only for perpetuals; account
-    /// responses can still hold spot and outcome coins.
+    /// responses, mid prices and the prices stream can still hold spot and outcome coins.
     public enum Kind: Hashable, Sendable {
         case perpetual
         case spot

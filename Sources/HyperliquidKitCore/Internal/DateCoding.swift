@@ -1,10 +1,10 @@
 package import Foundation
 
 /// An instant Hyperliquid sends as whole milliseconds since 1970, such as `1795507630703`.
-struct WireDate: Decodable {
-    let value: Date
+package struct WireDate: Decodable {
+    package let value: Date
 
-    init(from decoder: any Decoder) throws {
+    package init(from decoder: any Decoder) throws {
         value = Date(wireMilliseconds: try decoder.singleValueContainer().decode(Int64.self))
     }
 }

@@ -15,7 +15,13 @@ actor AssetDirectory {
 
     private let info: InfoClient
     private var dexIndexes: Task<[Hyperliquid.PerpDex: Int], any Error>?
-    private var assets: [Hyperliquid.PerpDex: Task<[Hyperliquid.Coin: Asset], any Error>] = [:]
+    private var universes: [Hyperliquid.PerpDex: Task<Universe, any Error>] = [:]
+
+    /// A perp DEX's perpetuals in `meta`'s order, and each one's position by name.
+    private struct Universe: Sendable {
+        let entries: [AssetMetadata.Entry]
+        let positions: [Hyperliquid.Coin: Int]
+    }
 
     init(info: InfoClient) {
         self.info = info
@@ -25,10 +31,12 @@ actor AssetDirectory {
         guard coin.kind == .perpetual else {
             throw Hyperliquid.ClientError(.unsupportedMarket, message: coin.name)
         }
-        guard let asset = try await assets(on: coin.dex)[coin] else {
+        let offset = coin.dex == .first ? 0 : try await offset(of: coin.dex)
+        let universe = try await universe(of: coin.dex)
+        guard let position = universe.positions[coin] else {
             throw Hyperliquid.ClientError(.unknownCoin, message: coin.name)
         }
-        return asset
+        return Asset(id: offset + position, sizeDecimals: universe.entries[position].szDecimals)
     }
 
     /// Throws `unknownCoin` unless Hyperliquid lists the perp DEX; the first perp DEX always passes.
@@ -36,22 +44,28 @@ actor AssetDirectory {
         if dex != .first { _ = try await offset(of: dex) }
     }
 
-    private func assets(on dex: Hyperliquid.PerpDex) async throws -> [Hyperliquid.Coin: Asset] {
-        let task = assets[dex] ?? Task { [info] in
-            let offset = dex == .first ? 0 : try await self.offset(of: dex)
-            let meta = InfoRequest<AssetMetadata>("meta", [.init(key: "dex", value: .string(dex.name))])
-            return Dictionary(
-                try await info.send(meta).universe.enumerated().map { index, entry in
-                    (entry.name, Asset(id: offset + index, sizeDecimals: entry.szDecimals))
-                }
-            ) { first, _ in first }
+    /// The perp DEX's perpetuals in `meta`'s order, which positional pushes such as `pac` follow.
+    /// Loaded by the perp DEX's name alone, so a perp DEX deployed after `perpDexs` was read still
+    /// loads.
+    func perpetuals(on dex: Hyperliquid.PerpDex) async throws -> [Hyperliquid.Coin] {
+        try await universe(of: dex).entries.map(\.name)
+    }
+
+    private func universe(of dex: Hyperliquid.PerpDex) async throws -> Universe {
+        let task = universes[dex] ?? Task { [info] in
+            let entries = try await info.send(InfoRequest<AssetMetadata>("meta", [.init(key: "dex", value: .string(dex.name))]))
+                .universe
+            return Universe(
+                entries: entries,
+                positions: Dictionary(entries.enumerated().map { ($1.name, $0) }) { first, _ in first }
+            )
         }
-        assets[dex] = task
+        universes[dex] = task
         do {
             return try await task.value
         } catch {
             // Forget a failed load so the next lookup tries again, unless another caller already did.
-            if assets[dex] == task { assets[dex] = nil }
+            if universes[dex] == task { universes[dex] = nil }
             throw error
         }
     }

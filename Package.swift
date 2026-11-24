@@ -22,6 +22,7 @@ let package = Package(
         .library(name: "HyperliquidKitCore", targets: ["HyperliquidKitCore"]),
     ],
     dependencies: [
+        .package(url: "https://github.com/1024jp/GzipSwift.git", from: "7.0.0"),
         .package(url: "https://github.com/21-DOT-DEV/swift-secp256k1.git", .upToNextMinor(from: "0.25.1")),
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .upToNextMinor(from: "1.10.0")),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.100.0"),
@@ -39,6 +40,7 @@ let package = Package(
                 "HyperliquidKitCore",
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
                 .product(name: "CryptoSwift", package: "CryptoSwift"),
+                .product(name: "Gzip", package: "GzipSwift"),
                 .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOHTTP1", package: "swift-nio"),
@@ -71,6 +73,7 @@ let package = Package(
                 .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
                 .product(name: "NIOWebSocket", package: "swift-nio"),
             ],
+            resources: [.copy("Fixtures")],
             swiftSettings: swiftSettings
         ),
     ]

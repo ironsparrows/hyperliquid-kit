@@ -6,9 +6,17 @@ import Testing
 actor FakeTransport: HTTPTransport {
     private(set) var requests: [TransportRequest] = []
     private var responses: [TransportResponse]
+    /// Answers each request by its body, instead of the scripted responses.
+    private let answer: (@Sendable (String) -> TransportResponse)?
 
     init(responses: [TransportResponse] = []) {
         self.responses = responses
+        answer = nil
+    }
+
+    init(answer: @escaping @Sendable (_ body: String) -> TransportResponse) {
+        responses = []
+        self.answer = answer
     }
 
     init(status: Int = 200, json: String) {
@@ -22,6 +30,7 @@ actor FakeTransport: HTTPTransport {
 
     func send(_ request: TransportRequest) async throws -> TransportResponse {
         requests.append(request)
+        if let answer { return answer(String(decoding: request.body, as: UTF8.self)) }
         guard !responses.isEmpty else {
             Issue.record("No response scripted for \(String(decoding: request.body, as: UTF8.self))")
             throw CancellationError()

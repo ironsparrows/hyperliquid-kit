@@ -12,7 +12,7 @@ Your app
 
 - Dependencies point one way: app, `HyperliquidKit`, `HyperliquidKitCore`, platform.
 - `HyperliquidKitCore` depends only on Foundation. It is a product so a module that needs only the contract (protocols and models, for mocking or dependency injection, or a signer of its own) doesn't compile NIO, BoringSSL or the signing libraries.
-- `HyperliquidKit` depends on AsyncHTTPClient (REST), WebSocketKit (streams), P256K from swift-secp256k1 (recoverable ECDSA signatures) and CryptoSwift (Keccak-256), and on Apple platforms on Apple's Compression (the compressed streams). None of their types appears in a public signature: `import HyperliquidKit` is all an app writes.
+- `HyperliquidKit` depends on AsyncHTTPClient (REST), WebSocketKit (streams), P256K from swift-secp256k1 (recoverable ECDSA signatures), CryptoSwift (Keccak-256) and GzipSwift (raw DEFLATE for the compressed streams, through the system's zlib). None of their types appears in a public signature: `import HyperliquidKit` is all an app writes.
 - Everything that turns an action into a digest (MessagePack encoding, Keccak-256, the action hash, EIP-712) lives in `HyperliquidKit`. A signer an app writes against `HyperliquidKitCore` receives the finished 32-byte digest.
 - Every API type is nested in `Hyperliquid`, so names like `Order`, `Signer` or `Address` can't collide with an app's types, another exchange SDK, or a dependency. Only `Hyperliquid` and `HyperliquidError` sit at the top level.
 
@@ -33,7 +33,7 @@ Some dependencies export the same top-level names:
 
 macOS 13, iOS 16, tvOS 16, visionOS 1 and Linux. watchOS is not supported.
 
-The three deflate-compressed streams (`l2` order book diffs, `fastAssetCtxs` and `pac`) decode with Apple's Compression framework. Their API sits under `#if canImport(Compression)`, so it doesn't exist on Linux: calling it there fails to build, and the rest of the package builds unchanged.
+The three deflate-compressed streams (`l2` order book diffs, `fastAssetCtxs` and `pac`) decode with GzipSwift on every platform: `gunzipped(wBits: -15)` reads raw DEFLATE. Only `Internal/Inflate.swift` imports it. Each push is inflated once: an `l2` diff while it is routed, since its coin is inside it, and a `fastAssetCtxs` or `pac` push by its stream. Their pushes build on the snapshot sent on subscribing, so each streams to one reader at a time.
 
 ## Access
 
@@ -48,7 +48,7 @@ The three deflate-compressed streams (`l2` order book diffs, `fastAssetCtxs` and
 
 - In `HyperliquidKitCore` and `HyperliquidKit`, a file with no `public` declaration goes in `Internal/`, so a module's root shows what apps can use.
 - A file owns one responsibility and is named after its primary type. Wire types live, `private`, in the file that reads or writes them.
-- Tests mirror the sources: `HyperliquidKitCoreTests` for the contract, `HyperliquidKitTests` for the client. `HyperliquidKitTestSupport` (in `Tests/`, not a product) holds the live test gate (`areLiveTestsEnabled`, `LiveTestSettings`) and the `.live` tag. In `HyperliquidKitTests`, `Loopback/` sends real requests to a local server, `Live/` calls Hyperliquid's mainnet, and `Support/` holds fakes and helpers. `HyperliquidKitCoreTests/Fixtures/` holds responses recorded from Hyperliquid, byte for byte except account addresses, which are swapped for fakes.
+- Tests mirror the sources: `HyperliquidKitCoreTests` for the contract, `HyperliquidKitTests` for the client. `HyperliquidKitTestSupport` (in `Tests/`, not a product) holds the live test gate (`areLiveTestsEnabled`, `LiveTestSettings`) and the `.live` tag. In `HyperliquidKitTests`, `Loopback/` sends real requests to a local server, `Live/` calls Hyperliquid's mainnet, and `Support/` holds fakes and helpers. `HyperliquidKitCoreTests/Fixtures/` holds responses and pushes recorded from Hyperliquid, byte for byte except account addresses and hashes, which are swapped for fakes. `HyperliquidKitTests/Fixtures/` holds recorded streams of compressed pushes, one frame per line, and the `meta` responses that name their positions.
 
 Files of one kind use the same `// MARK: -` sections in the same order; a section that doesn't apply is left out:
 
@@ -58,6 +58,7 @@ Files of one kind use the same `// MARK: -` sections in the same order; a sectio
 | A model | Model · Reading · Wire |
 | A domain conformer | Requests or Actions · Wire |
 | The stream connection | Connection · Subscribing · Receiving · Recovering · Wire |
+| The streams (`Streams` and its extensions) | Subscriptions · Merging · Wire, as each file needs |
 
 ## Vocabulary
 
