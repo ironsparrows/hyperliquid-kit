@@ -15,7 +15,8 @@ extension Hyperliquid {
 
         init(configuration: Configuration, transport: any HTTPTransport) {
             let info = InfoClient(network: configuration.network, transport: transport, timeout: configuration.timeout)
-            market = MarketRequests(info: info)
+            let directory = AssetDirectory(info: info)
+            market = MarketRequests(info: info, directory: directory)
         }
     }
 }

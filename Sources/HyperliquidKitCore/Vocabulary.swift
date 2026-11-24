@@ -158,3 +158,43 @@ extension Hyperliquid {
         public static let dexAbstraction = Self(rawValue: "dexAbstraction")
     }
 }
+
+// MARK: - Market data
+
+extension Hyperliquid.Candle {
+    /// How much time one candle covers.
+    public struct Interval: RawRepresentable, Hashable, Sendable, Codable {
+        public let rawValue: String
+        public init(rawValue: String) { self.rawValue = rawValue }
+
+        public static let oneMinute = Self(rawValue: "1m")
+        public static let threeMinutes = Self(rawValue: "3m")
+        public static let fiveMinutes = Self(rawValue: "5m")
+        public static let fifteenMinutes = Self(rawValue: "15m")
+        public static let thirtyMinutes = Self(rawValue: "30m")
+        public static let oneHour = Self(rawValue: "1h")
+        public static let twoHours = Self(rawValue: "2h")
+        public static let fourHours = Self(rawValue: "4h")
+        public static let eightHours = Self(rawValue: "8h")
+        public static let twelveHours = Self(rawValue: "12h")
+        public static let oneDay = Self(rawValue: "1d")
+        public static let threeDays = Self(rawValue: "3d")
+        public static let oneWeek = Self(rawValue: "1w")
+        public static let oneMonth = Self(rawValue: "1M")
+    }
+}
+
+extension Hyperliquid.PredictedFunding {
+    /// A venue whose funding Hyperliquid predicts.
+    public struct Exchange: RawRepresentable, Hashable, Sendable, Codable {
+        public let rawValue: String
+        public init(rawValue: String) { self.rawValue = rawValue }
+
+        /// Hyperliquid's own perpetuals. Hyperliquid's `"HlPerp"`.
+        public static let hyperliquid = Self(rawValue: "HlPerp")
+        /// Binance's perpetuals. Hyperliquid's `"BinPerp"`.
+        public static let binance = Self(rawValue: "BinPerp")
+        /// Bybit's perpetuals. Hyperliquid's `"BybitPerp"`.
+        public static let bybit = Self(rawValue: "BybitPerp")
+    }
+}

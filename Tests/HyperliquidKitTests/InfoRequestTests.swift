@@ -38,5 +38,14 @@ extension HyperliquidKitTests {
                 try await InfoClient.test(FakeTransport(json: "{}")).send(.perpDexs)
             }
         }
+
+        @Test func `a null body throws an unexpected response unless the result is optional`() async throws {
+            await #expect {
+                try await InfoClient.test(FakeTransport(json: " null\n")).send(.perpDexs)
+            } throws: { error in
+                (error as? HyperliquidError)?.kind == .unexpectedResponse
+            }
+            #expect(try await InfoClient.test(FakeTransport(json: "null")).send(.perpDexLimits(.first)) == nil)
+        }
     }
 }

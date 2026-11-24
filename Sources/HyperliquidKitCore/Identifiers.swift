@@ -64,6 +64,15 @@ extension Hyperliquid {
         public var description: String { String(rawValue) }
     }
 
+    /// A trade's ID, assigned by Hyperliquid: a hash of the two matched orders' IDs.
+    ///
+    /// Not unique on its own; Hyperliquid identifies a trade by its block time, coin and ID together.
+    public struct TradeID: RawRepresentable, Hashable, Sendable, Codable, CustomStringConvertible {
+        public let rawValue: UInt64
+        public init(rawValue: UInt64) { self.rawValue = rawValue }
+        public var description: String { String(rawValue) }
+    }
+
     /// The hash of a transaction on Hyperliquid's chain, as `0x` and 64 hexadecimal digits.
     ///
     /// Some trades and TWAP slice fills carry the zero hash.

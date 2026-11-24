@@ -1,11 +1,11 @@
-import Foundation
+package import Foundation
 
 /// A decimal Hyperliquid sends as a JSON string, such as `"60243.0"`, decoded without passing through
 /// `Double`. A JSON number is accepted too.
-struct WireDecimal: Decodable {
-    let value: Decimal
+package struct WireDecimal: Decodable, Sendable {
+    package let value: Decimal
 
-    init(from decoder: any Decoder) throws {
+    package init(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let number = try? container.decode(Decimal.self) {
             value = number

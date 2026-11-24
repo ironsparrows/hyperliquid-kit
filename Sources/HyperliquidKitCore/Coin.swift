@@ -31,3 +31,30 @@ extension Hyperliquid {
         }
     }
 }
+
+// MARK: - Wire
+
+/// A dictionary keyed by coin encodes and decodes as a JSON object keyed by the coin's name, as
+/// Hyperliquid sends one, not as an array of alternating keys and values.
+extension Hyperliquid.Coin: CodingKeyRepresentable {
+    private struct Key: CodingKey {
+        let stringValue: String
+        var intValue: Int? { nil }
+
+        init(stringValue: String) {
+            self.stringValue = stringValue
+        }
+
+        init?(intValue: Int) {
+            nil
+        }
+    }
+
+    public var codingKey: any CodingKey {
+        Key(stringValue: name)
+    }
+
+    public init?(codingKey: some CodingKey) {
+        self.init(codingKey.stringValue)
+    }
+}

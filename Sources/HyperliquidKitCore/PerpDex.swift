@@ -63,6 +63,40 @@ extension Hyperliquid.PerpDex {
     }
 }
 
+extension Hyperliquid.PerpDex {
+    /// A builder-deployed perp DEX's caps on open interest and transfers.
+    public struct Limits: Hashable, Sendable {
+        /// The cap on the DEX's total open interest. Hyperliquid's `totalOiCap`.
+        public let totalOpenInterestCap: Decimal
+        /// The cap on each market's open interest size. Hyperliquid's `oiSzCapPerPerp`.
+        public let openInterestSizeCapPerPerpetual: Decimal
+        /// The largest notional value a transfer may move. Hyperliquid's `maxTransferNtl`.
+        public let maxTransferNotional: Decimal
+        /// Each market's cap on open interest.
+        public let openInterestCaps: [Hyperliquid.Coin: Decimal]
+
+        public init(
+            totalOpenInterestCap: Decimal, openInterestSizeCapPerPerpetual: Decimal, maxTransferNotional: Decimal,
+            openInterestCaps: [Hyperliquid.Coin: Decimal] = [:]
+        ) {
+            self.totalOpenInterestCap = totalOpenInterestCap
+            self.openInterestSizeCapPerPerpetual = openInterestSizeCapPerPerpetual
+            self.maxTransferNotional = maxTransferNotional
+            self.openInterestCaps = openInterestCaps
+        }
+    }
+
+    /// A perp DEX's net deposits.
+    public struct Status: Hashable, Sendable {
+        /// The DEX's total net deposits. Hyperliquid's `totalNetDeposit`.
+        public let totalNetDeposit: Decimal
+
+        public init(totalNetDeposit: Decimal) {
+            self.totalNetDeposit = totalNetDeposit
+        }
+    }
+}
+
 // MARK: - Wire
 
 extension Hyperliquid.PerpDex.Details: Decodable {
@@ -72,8 +106,53 @@ extension Hyperliquid.PerpDex.Details: Decodable {
         case fundingMultipliers = "assetToFundingMultiplier"
     }
 
-    /// One `[coin, "value"]` pair of a per-market list.
-    private struct CoinValue: Decodable {
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        dex = .named(try container.decode(String.self, forKey: .name))
+        fullName = try container.decode(String.self, forKey: .fullName)
+        deployer = try container.decode(Hyperliquid.Address.self, forKey: .deployer)
+        oracleUpdater = try container.decodeIfPresent(Hyperliquid.Address.self, forKey: .oracleUpdater)
+        feeRecipient = try container.decodeIfPresent(Hyperliquid.Address.self, forKey: .feeRecipient)
+        openInterestCaps = try container.decodeIfPresent(CoinValues.self, forKey: .openInterestCaps)?.values ?? [:]
+        fundingMultipliers = try container.decodeIfPresent(CoinValues.self, forKey: .fundingMultipliers)?.values ?? [:]
+    }
+}
+
+extension Hyperliquid.PerpDex.Limits: Decodable {
+    private enum CodingKeys: String, CodingKey {
+        case totalOiCap, oiSzCapPerPerp, maxTransferNtl, coinToOiCap
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        totalOpenInterestCap = try container.decode(WireDecimal.self, forKey: .totalOiCap).value
+        openInterestSizeCapPerPerpetual = try container.decode(WireDecimal.self, forKey: .oiSzCapPerPerp).value
+        maxTransferNotional = try container.decode(WireDecimal.self, forKey: .maxTransferNtl).value
+        openInterestCaps = try container.decode(CoinValues.self, forKey: .coinToOiCap).values
+    }
+}
+
+extension Hyperliquid.PerpDex.Status: Decodable {
+    private enum CodingKeys: String, CodingKey {
+        case totalNetDeposit
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        totalNetDeposit = try container.decode(WireDecimal.self, forKey: .totalNetDeposit).value
+    }
+}
+
+/// A per-market list of `[coin, "value"]` pairs; the first value wins if a coin repeats.
+private struct CoinValues: Decodable {
+    let values: [Hyperliquid.Coin: Decimal]
+
+    init(from decoder: any Decoder) throws {
+        let pairs = try decoder.singleValueContainer().decode([Pair].self)
+        values = Dictionary(pairs.map { ($0.coin, $0.value) }) { first, _ in first }
+    }
+
+    private struct Pair: Decodable {
         let coin: Hyperliquid.Coin
         let value: Decimal
 
@@ -82,20 +161,5 @@ extension Hyperliquid.PerpDex.Details: Decodable {
             coin = try container.decode(Hyperliquid.Coin.self)
             value = try container.decode(WireDecimal.self).value
         }
-    }
-
-    public init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        func values(_ key: CodingKeys) throws -> [Hyperliquid.Coin: Decimal] {
-            let pairs = try container.decodeIfPresent([CoinValue].self, forKey: key) ?? []
-            return Dictionary(pairs.map { ($0.coin, $0.value) }) { first, _ in first }
-        }
-        dex = .named(try container.decode(String.self, forKey: .name))
-        fullName = try container.decode(String.self, forKey: .fullName)
-        deployer = try container.decode(Hyperliquid.Address.self, forKey: .deployer)
-        oracleUpdater = try container.decodeIfPresent(Hyperliquid.Address.self, forKey: .oracleUpdater)
-        feeRecipient = try container.decodeIfPresent(Hyperliquid.Address.self, forKey: .feeRecipient)
-        openInterestCaps = try values(.openInterestCaps)
-        fundingMultipliers = try values(.fundingMultipliers)
     }
 }

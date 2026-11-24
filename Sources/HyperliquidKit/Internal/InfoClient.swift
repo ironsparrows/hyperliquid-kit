@@ -30,8 +30,21 @@ struct InfoClient: Sendable {
                 body: response.body
             )
         }
-        // 4. Decode off the caller's actor: some responses are tens of kilobytes.
+        // 4. A `null` body is an error, unless the read's result is optional: Hyperliquid answers some
+        //    reads it can't serve, such as `allMids` for an unknown perp DEX, with 200 and `null`.
+        if !(Response.self is any OptionalResponse.Type), Self.isNull(response.body) {
+            throw HyperliquidError(
+                .unexpectedResponse, message: "Hyperliquid answered null", httpStatus: response.status,
+                body: response.body
+            )
+        }
+        // 5. Decode off the caller's actor: some responses are tens of kilobytes.
         return try await Self.decode(Response.self, from: response.body)
+    }
+
+    /// Whether the body is JSON `null`, allowing whitespace around it.
+    private static func isNull(_ body: Data) -> Bool {
+        body.count < 16 && String(decoding: body, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines) == "null"
     }
 
     @concurrent
@@ -53,6 +66,11 @@ struct InfoClient: Sendable {
         return String(decoding: body, as: UTF8.self)
     }
 }
+
+/// Marks `Optional` responses, whose `null` decodes as `nil` instead of throwing.
+private protocol OptionalResponse {}
+
+extension Optional: OptionalResponse {}
 
 /// One read: the body to send, and the type its response decodes to.
 struct InfoRequest<Response: Decodable & Sendable>: Sendable {
