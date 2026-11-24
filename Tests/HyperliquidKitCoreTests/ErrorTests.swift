@@ -31,18 +31,6 @@ extension HyperliquidKitCoreTests {
             #expect(HyperliquidError(kind, message: "").errorDescription == expected)
         }
 
-        @Test(arguments: [
-            (HyperliquidError.Kind.actionRejected, "User or API Wallet 0x0459dea86a6d8a2bb4ef1bb2a1a2bd5ae44ece91 does not exist.", true),
-            (.actionRejected, "Must deposit before performing actions. User: 0x0459dea86a6d8a2bb4ef1bb2a1a2bd5ae44ece91", true),
-            (.actionRejected, "Order must have minimum value of $10.", false),
-            (.httpStatus, "User or API Wallet 0x0459dea86a6d8a2bb4ef1bb2a1a2bd5ae44ece91 does not exist.", false),
-        ])
-        func `an unrecognized signer is told apart by Hyperliquid's message`(
-            kind: HyperliquidError.Kind, message: String, expected: Bool
-        ) {
-            #expect(HyperliquidError(kind, message: message).isSignatureMismatch == expected)
-        }
-
         @Test func `the nonce of a failed action is kept`() {
             #expect(HyperliquidError(.actionRejected, nonce: 1_732_400_000_000).nonce == 1_732_400_000_000)
         }
@@ -55,6 +43,15 @@ extension HyperliquidKitCoreTests {
                     == "Hyperliquid rejected the stream subscription: Error parsing JSON"
             )
             #expect(Hyperliquid.ClientError(.missingSigner).errorDescription == "The client has no signer for an action")
+        }
+
+        @Test func `a network failure keeps the network library's error for diagnostics`() {
+            struct LibraryError: Error, CustomStringConvertible {
+                var description: String { "deadline exceeded" }
+            }
+            let error = Hyperliquid.ClientError(.timedOut, underlyingError: LibraryError())
+            #expect(error.description == "Hyperliquid client error: timedOut (deadline exceeded)")
+            #expect((error as any Error).localizedDescription == "Hyperliquid didn't answer in time")
         }
     }
 }

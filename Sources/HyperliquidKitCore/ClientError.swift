@@ -4,21 +4,34 @@ extension Hyperliquid {
     /// A failure the client detected itself, as opposed to one Hyperliquid reported
     /// (``HyperliquidError``).
     ///
+    /// Network failures, such as a timeout or no connection, arrive as this error too, with the
+    /// network library's error in ``underlyingError``. Cancelling the task throws `CancellationError`
+    /// instead.
+    ///
     /// `localizedDescription` explains the reason in a sentence, followed by ``message`` when there
     /// is one.
     public struct ClientError: Error, Sendable, CustomStringConvertible {
         public var reason: Reason
         /// Details for diagnostics, such as the text of Hyperliquid's stream error.
         public var message: String?
+        /// The error that caused this one, such as the network library's error behind
+        /// ``Reason/timedOut``.
+        ///
+        /// For diagnostics only: its type differs between platforms and library versions, so don't
+        /// match on it.
+        public var underlyingError: (any Error)?
 
-        public init(_ reason: Reason, message: String? = nil) {
+        public init(_ reason: Reason, message: String? = nil, underlyingError: (any Error)? = nil) {
             self.reason = reason
             self.message = message
+            self.underlyingError = underlyingError
         }
 
         public var description: String {
-            guard let message, !message.isEmpty else { return "Hyperliquid client error: \(reason)" }
-            return "Hyperliquid client error: \(reason): \(message)"
+            var text = "Hyperliquid client error: \(reason)"
+            if let message, !message.isEmpty { text += ": \(message)" }
+            if let underlyingError { text += " (\(underlyingError))" }
+            return text
         }
     }
 }
@@ -96,5 +109,23 @@ extension Hyperliquid.ClientError {
         )
         /// The stream connection closed.
         public static let connectionClosed = Self("connectionClosed", summary: "The stream connection closed")
+
+        // MARK: Network
+
+        /// Hyperliquid didn't answer in time: within the client's timeout, or the connection took more
+        /// than 10 seconds.
+        ///
+        /// The request may still have reached Hyperliquid. Before repeating one that changes something,
+        /// such as placing an order, check whether it took effect.
+        public static let timedOut = Self("timedOut", summary: "Hyperliquid didn't answer in time")
+        /// The client couldn't connect to Hyperliquid, or the connection failed before the whole
+        /// response arrived.
+        ///
+        /// When the connection failed after the request was sent, the request may still have reached
+        /// Hyperliquid. Before repeating one that changes something, such as placing an order, check
+        /// whether it took effect.
+        public static let connectionFailed = Self(
+            "connectionFailed", summary: "The connection to Hyperliquid failed"
+        )
     }
 }

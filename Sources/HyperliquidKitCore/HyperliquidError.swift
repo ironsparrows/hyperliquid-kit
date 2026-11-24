@@ -31,17 +31,6 @@ public struct HyperliquidError: Error, Sendable, CustomStringConvertible {
         if let message, !message.isEmpty { text += ": \(message)" }
         return text
     }
-
-    /// Whether Hyperliquid didn't recognize the action's signer, which is how a wrong key, an API
-    /// wallet that isn't approved, or a signature for the other network shows.
-    ///
-    /// Hyperliquid can't tell a wrong signature from an unknown signer, so this matches the text of its
-    /// two messages for that case, which could change.
-    public var isSignatureMismatch: Bool {
-        guard kind == .actionRejected, let message else { return false }
-        return (message.hasPrefix("User or API Wallet ") && message.contains(" does not exist"))
-            || message.hasPrefix("Must deposit before performing actions")
-    }
 }
 
 extension HyperliquidError: LocalizedError {

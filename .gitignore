@@ -7,3 +7,6 @@ DerivedData/
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
 /Package.resolved
+
+# Live test values for Xcode runs. Only you create this file; see CONTRIBUTING.md.
+/Tests/HyperliquidKitTestSupport/LocalLiveTestSettings.swift

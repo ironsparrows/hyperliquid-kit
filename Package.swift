@@ -24,6 +24,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/21-DOT-DEV/swift-secp256k1.git", .upToNextMinor(from: "0.25.1")),
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .upToNextMinor(from: "1.10.0")),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.100.0"),
         .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.37.1"),
         .package(url: "https://github.com/vapor/websocket-kit.git", from: "2.16.2"),
     ],
@@ -38,19 +39,35 @@ let package = Package(
                 "HyperliquidKitCore",
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
                 .product(name: "CryptoSwift", package: "CryptoSwift"),
+                .product(name: "NIOCore", package: "swift-nio"),
+                .product(name: "NIOHTTP1", package: "swift-nio"),
                 .product(name: "P256K", package: "swift-secp256k1"),
                 .product(name: "WebSocketKit", package: "websocket-kit"),
             ],
             swiftSettings: swiftSettings
         ),
+        .target(
+            name: "HyperliquidKitTestSupport",
+            dependencies: ["HyperliquidKitCore"],
+            path: "Tests/HyperliquidKitTestSupport",
+            swiftSettings: swiftSettings
+        ),
         .testTarget(
             name: "HyperliquidKitCoreTests",
             dependencies: ["HyperliquidKitCore"],
+            resources: [.copy("Fixtures")],
             swiftSettings: swiftSettings
         ),
         .testTarget(
             name: "HyperliquidKitTests",
-            dependencies: ["HyperliquidKit"],
+            dependencies: [
+                "HyperliquidKit",
+                "HyperliquidKitTestSupport",
+                .product(name: "AsyncHTTPClient", package: "async-http-client"),
+                .product(name: "NIOCore", package: "swift-nio"),
+                .product(name: "NIOHTTP1", package: "swift-nio"),
+                .product(name: "NIOPosix", package: "swift-nio"),
+            ],
             swiftSettings: swiftSettings
         ),
     ]

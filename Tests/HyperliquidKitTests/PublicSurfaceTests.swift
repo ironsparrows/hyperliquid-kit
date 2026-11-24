@@ -16,7 +16,10 @@ extension HyperliquidKitTests {
                 Hyperliquid.Side.self, Hyperliquid.TimeInForce.self, Hyperliquid.TriggerKind.self,
                 Hyperliquid.OrderStatus.self, Hyperliquid.MarginMode.self, Hyperliquid.AccountMode.self,
                 (any Hyperliquid.Signer).self, Hyperliquid.SigningRequest.self, Hyperliquid.Signature.self,
-                Hyperliquid.PrivateKeySigner.self,
+                Hyperliquid.PrivateKeySigner.self, (any Hyperliquid.API).self, (any Hyperliquid.MarketAPI).self,
+                Hyperliquid.Client.self, Hyperliquid.Client.Configuration.self, Hyperliquid.Perpetual.self,
+                Hyperliquid.MarginTable.self, Hyperliquid.MarginTable.Tier.self, Hyperliquid.AssetContext.self, Hyperliquid.PerpetualContext.self,
+                Hyperliquid.PerpDex.Details.self,
             ]
             _ = types
         }
