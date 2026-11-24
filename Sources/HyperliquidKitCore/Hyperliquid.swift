@@ -12,5 +12,7 @@ extension Hyperliquid {
         var market: any MarketAPI { get }
         var account: any AccountAPI { get }
         var position: any PositionAPI { get }
+        var order: any OrderAPI { get }
+        var twap: any TwapAPI { get }
     }
 }

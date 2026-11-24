@@ -133,6 +133,19 @@ extension HyperliquidKitTests {
             ])
         }
 
+        @Test(arguments: ["@107", "#10"] as [Hyperliquid.Coin])
+        func `trading limits for a spot or outcome coin throw unsupported market without a request`(
+            coin: Hyperliquid.Coin
+        ) async {
+            let transport = FakeTransport()
+            await #expect {
+                _ = try await Self.position(transport).tradingLimits(coin)
+            } throws: { error in
+                (error as? Hyperliquid.ClientError)?.reason == .unsupportedMarket
+            }
+            #expect(await transport.requests.isEmpty)
+        }
+
         private static func account(_ transport: FakeTransport) -> AccountRequests {
             AccountRequests(info: .test(transport), account: Self.account)
         }

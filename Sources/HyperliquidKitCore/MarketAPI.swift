@@ -6,10 +6,9 @@ extension Hyperliquid {
     /// Reached through ``API/market``. None of these requests needs an account or a signer.
     ///
     /// Requests for one coin check it against its perp DEX's perpetuals before the read is sent,
-    /// loading them once per perp DEX, and throw ``ClientError/Reason/unknownCoin`` for a coin that
-    /// isn't listed.
-    /// Spot and outcome coins, such as `"@107"`, are refused the same way: the client covers
-    /// perpetuals only.
+    /// loading them once per perp DEX, and throw ``ClientError/Reason/unknownCoin`` for a perpetual
+    /// that isn't listed. Spot and outcome coins, such as `"@107"`, throw
+    /// ``ClientError/Reason/unsupportedMarket`` without a request: the client covers perpetuals only.
     public protocol MarketAPI: Sendable {
         // MARK: Perpetuals
 

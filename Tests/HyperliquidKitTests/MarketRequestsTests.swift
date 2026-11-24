@@ -98,23 +98,42 @@ extension HyperliquidKitTests {
             #expect(await transport.bodies.last == #"{"type":"recentTrades","coin":"ETH"}"#)
         }
 
-        @Test(arguments: ["NOPE", "@107", "#114910"] as [Hyperliquid.Coin])
-        func `a coin the perp DEX doesn't list throws unknown coin before the read is sent`(coin: Hyperliquid.Coin)
-            async
-        {
+        @Test func `a perpetual the perp DEX doesn't list throws unknown coin before the read is sent`() async {
             let transport = FakeTransport(json: Self.btcMeta)
             let market = Self.market(transport)
-            await #expect {
-                _ = try await market.orderBook(coin)
-            } throws: { error in
-                (error as? Hyperliquid.ClientError)?.reason == .unknownCoin
+            for read in Self.coinReads(market, "NOPE") {
+                await #expect {
+                    try await read()
+                } throws: { error in
+                    (error as? Hyperliquid.ClientError)?.reason == .unknownCoin
+                }
             }
-            await #expect(throws: Hyperliquid.ClientError.self) { _ = try await market.recentTrades(coin) }
-            await #expect(throws: Hyperliquid.ClientError.self) {
-                _ = try await market.candles(coin, interval: .oneHour, from: .now, to: .now)
-            }
-            await #expect(throws: Hyperliquid.ClientError.self) { _ = try await market.fundingHistory(coin, from: .now) }
             #expect(await transport.bodies == [#"{"type":"meta","dex":""}"#])
+        }
+
+        @Test(arguments: ["@107", "PURR/USDC", "#10"] as [Hyperliquid.Coin])
+        func `a spot or outcome coin throws unsupported market without a request`(coin: Hyperliquid.Coin) async {
+            let transport = FakeTransport()
+            for read in Self.coinReads(Self.market(transport), coin) {
+                await #expect {
+                    try await read()
+                } throws: { error in
+                    (error as? Hyperliquid.ClientError)?.reason == .unsupportedMarket
+                }
+            }
+            #expect(await transport.requests.isEmpty)
+        }
+
+        /// Every market read that takes one coin.
+        private static func coinReads(_ market: MarketRequests, _ coin: Hyperliquid.Coin)
+            -> [@Sendable () async throws -> Void]
+        {
+            [
+                { _ = try await market.orderBook(coin) },
+                { _ = try await market.recentTrades(coin) },
+                { _ = try await market.candles(coin, interval: .oneHour, from: .now, to: .now) },
+                { _ = try await market.fundingHistory(coin, from: .now) },
+            ]
         }
 
         @Test func `a coin on a perp DEX Hyperliquid doesn't list throws unknown coin before the read is sent`()

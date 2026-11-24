@@ -67,6 +67,17 @@ extension HyperliquidKitTests {
             #expect(await transport.requests.count == 1)
         }
 
+        @Test(arguments: ["@107", "PURR/USDC", "#10"] as [Hyperliquid.Coin])
+        func `a spot or outcome coin throws unsupported market without loading`(coin: Hyperliquid.Coin) async {
+            let transport = FakeTransport()
+            await #expect {
+                try await AssetDirectory(info: .test(transport)).asset(for: coin)
+            } throws: { error in
+                (error as? Hyperliquid.ClientError)?.reason == .unsupportedMarket
+            }
+            #expect(await transport.requests.isEmpty)
+        }
+
         @Test func `a failed load is tried again on the next lookup`() async throws {
             let transport = FakeTransport(responses: [
                 .init(status: 500, body: Data("null".utf8)), .init(status: 200, body: Data(Self.meta.utf8)),

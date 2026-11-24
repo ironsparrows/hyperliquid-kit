@@ -1,6 +1,6 @@
 extension Hyperliquid {
-    /// A market's name as Hyperliquid spells it, such as `"BTC"`, or `"xyz:XYZ100"` on a
-    /// builder-deployed perp DEX.
+    /// A market's name as Hyperliquid spells it, such as `"BTC"`, `"xyz:XYZ100"` on a builder-deployed
+    /// perp DEX, `"@107"` or `"PURR/USDC"` for a spot market, or `"#10"` for an outcome.
     public struct Coin: Hashable, Sendable, Codable, CustomStringConvertible, ExpressibleByStringLiteral {
         public let name: String
 
@@ -29,6 +29,25 @@ extension Hyperliquid {
             guard let colon = name.firstIndex(of: ":") else { return .first }
             return .named(String(name[..<colon]))
         }
+
+        /// Which kind of market the name spells: a name that starts with `#` is an outcome, one that
+        /// starts with `@` or names a pair such as `"PURR/USDC"` is a spot market, any other is a
+        /// perpetual.
+        public var kind: Kind {
+            if name.hasPrefix("#") { return .outcome }
+            if name.hasPrefix("@") || name.contains("/") { return .spot }
+            return .perpetual
+        }
+    }
+}
+
+extension Hyperliquid.Coin {
+    /// A kind of market. The client trades and reads market data only for perpetuals; account
+    /// responses can still hold spot and outcome coins.
+    public enum Kind: Hashable, Sendable {
+        case perpetual
+        case spot
+        case outcome
     }
 }
 

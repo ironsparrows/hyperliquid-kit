@@ -9,11 +9,13 @@ extension Hyperliquid {
         public let market: any MarketAPI
         public let account: any AccountAPI
         public let position: any PositionAPI
+        public let order: any OrderAPI
+        public let twap: any TwapAPI
 
         /// Creates a client for the configuration's network.
         ///
-        /// - Parameter account: The account that account and position reads use when they are given
-        ///   none. Pass the account's own address, not an API wallet's: an API wallet's address reads
+        /// - Parameter account: The account that account, position, order and TWAP reads use when they
+        ///   are given none. Pass the account's own address, not an API wallet's: an API wallet's address reads
         ///   as an empty account.
         public convenience init(account: Hyperliquid.Address? = nil, configuration: Configuration = .init()) {
             self.init(account: account, configuration: configuration, transport: AsyncHTTPClientTransport())
@@ -25,6 +27,8 @@ extension Hyperliquid {
             market = MarketRequests(info: info, directory: directory)
             self.account = AccountRequests(info: info, account: account)
             position = PositionRequests(info: info, directory: directory, account: account)
+            order = OrderRequests(info: info, account: account)
+            twap = TwapRequests(info: info, account: account)
         }
     }
 }

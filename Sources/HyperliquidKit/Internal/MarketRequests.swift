@@ -3,8 +3,8 @@ import HyperliquidKitCore
 
 /// Public market data, read from `/info`.
 ///
-/// A request for one coin first checks the coin in `directory`, so an unknown coin throws
-/// `unknownCoin` before the read is sent.
+/// A request for one coin first checks the coin in `directory`, so a spot or outcome coin throws
+/// `unsupportedMarket` and an unknown perpetual `unknownCoin` before the read is sent.
 struct MarketRequests: Hyperliquid.MarketAPI {
     let info: InfoClient
     let directory: AssetDirectory
@@ -92,7 +92,8 @@ struct MarketRequests: Hyperliquid.MarketAPI {
 
     // MARK: Checking coins
 
-    /// Throws `unknownCoin` unless the coin's perp DEX lists it.
+    /// Throws `unsupportedMarket` for a spot or outcome coin, `unknownCoin` unless the coin's perp DEX
+    /// lists it.
     private func check(_ coin: Hyperliquid.Coin) async throws {
         _ = try await directory.asset(for: coin)
     }

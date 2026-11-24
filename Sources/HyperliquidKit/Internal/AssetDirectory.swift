@@ -4,7 +4,8 @@ import HyperliquidKitCore
 ///
 /// An asset ID is the perpetual's index in its perp DEX's `meta`. On the DEX at index `i` of
 /// `perpDexs` (`i ≥ 1`), it is offset by `100000 + i × 10000`. A coin the loaded `meta` doesn't list
-/// throws `unknownCoin`; nothing is reloaded. Only the names and size decimals are read, so a change
+/// throws `unknownCoin`; nothing is reloaded. A spot or outcome coin throws `unsupportedMarket`
+/// without loading anything. Only the names and size decimals are read, so a change
 /// to any other field can't stop actions.
 actor AssetDirectory {
     struct Asset: Hashable, Sendable {
@@ -21,6 +22,9 @@ actor AssetDirectory {
     }
 
     func asset(for coin: Hyperliquid.Coin) async throws -> Asset {
+        guard coin.kind == .perpetual else {
+            throw Hyperliquid.ClientError(.unsupportedMarket, message: coin.name)
+        }
         guard let asset = try await assets(on: coin.dex)[coin] else {
             throw Hyperliquid.ClientError(.unknownCoin, message: coin.name)
         }
@@ -71,7 +75,7 @@ actor AssetDirectory {
 
 // MARK: - Wire
 
-/// The part of `meta` asset IDs need, as the Python SDK's `set_perp_meta` reads it.
+/// The part of `meta` asset IDs need: each perpetual's name and size decimals.
 private struct AssetMetadata: Decodable, Sendable {
     struct Entry: Decodable, Sendable {
         let name: Hyperliquid.Coin

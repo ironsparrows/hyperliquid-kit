@@ -63,7 +63,7 @@ extension HyperliquidKitCoreTests {
             #expect(first.price == Decimal(string: "59661.0"))
             #expect(first.size == Decimal(string: "0.01275"))
             #expect(first.id == Hyperliquid.TradeID(rawValue: 1_106_373_003_298_555))
-            #expect(first.hash.rawValue == "0x7cefd53fd0b73f157e6904497db81b02045400256bba5de720b880928fbb1900")
+            #expect(first.hash.rawValue == "0x0000000000000000000000000000000000000000000000000000000000000065")
             #expect(first.buyer.description == "0x0000000000000000000000000000000000000001")
             #expect(first.seller.description == "0x0000000000000000000000000000000000000002")
         }

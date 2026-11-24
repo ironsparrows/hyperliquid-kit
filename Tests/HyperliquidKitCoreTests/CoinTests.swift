@@ -15,6 +15,14 @@ extension HyperliquidKitCoreTests {
             #expect(coin.dex == dex)
         }
 
+        @Test(arguments: [
+            (Hyperliquid.Coin("BTC"), Hyperliquid.Coin.Kind.perpetual), ("xyz:XYZ100", .perpetual), ("kPEPE", .perpetual),
+            ("@107", .spot), ("PURR/USDC", .spot), ("#10", .outcome), ("#114910", .outcome),
+        ])
+        func `a coin's kind follows its spelling`(coin: Hyperliquid.Coin, kind: Hyperliquid.Coin.Kind) {
+            #expect(coin.kind == kind)
+        }
+
         @Test func `the first perp DEX has an empty name`() {
             #expect(Hyperliquid.PerpDex.first.name == "")
             #expect(Hyperliquid.PerpDex.named("") == .first)
