@@ -49,9 +49,10 @@ struct TypedData {
         return Keccak256.hash(Keccak256.hash(Array(type.utf8)) + fields.flatMap(\.value.encoded))
     }
 
-    /// The message as `eth_signTypedData_v4` takes it, laid out as Hyperliquid's Python SDK hands an L1
-    /// action to the wallet (`l1_payload`). Actions signed by the account's own wallet lay it out
-    /// differently; only their ``digest`` is used.
+    /// The message as `eth_signTypedData_v4` takes it: the domain, then the types (the primary type
+    /// before `EIP712Domain`), the primary type and the message. This is the layout of an L1 action;
+    /// actions signed by the account's own wallet lay it out differently, and only their ``digest`` is
+    /// used.
     private var json: ActionValue {
         let domainTypes: ActionValue = [
             ["name": "name", "type": "string"],

@@ -79,7 +79,7 @@ extension HyperliquidKitTests {
 
         @Test func `reads without an account throw missing account before sending`() async {
             let transport = FakeTransport()
-            let order = OrderRequests(info: .test(transport), account: nil)
+            let order = OrderRequests.test(transport, account: nil)
             let twap = TwapRequests(info: .test(transport), account: nil)
             let reads: [@Sendable () async throws -> Void] = [
                 { _ = try await order.pending() }, { _ = try await order.pendingDetailed() },
@@ -108,7 +108,7 @@ extension HyperliquidKitTests {
         }
 
         private static func order(_ transport: FakeTransport) -> OrderRequests {
-            OrderRequests(info: .test(transport), account: Self.account)
+            OrderRequests.test(transport, account: Self.account)
         }
     }
 }

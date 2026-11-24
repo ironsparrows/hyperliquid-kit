@@ -1,3 +1,4 @@
+import Foundation
 public import HyperliquidKitCore
 
 extension Hyperliquid {
@@ -14,20 +15,36 @@ extension Hyperliquid {
 
         /// Creates a client for the configuration's network.
         ///
-        /// - Parameter account: The account that account, position, order and TWAP reads use when they
-        ///   are given none. Pass the account's own address, not an API wallet's: an API wallet's address reads
-        ///   as an empty account.
-        public convenience init(account: Hyperliquid.Address? = nil, configuration: Configuration = .init()) {
-            self.init(account: account, configuration: configuration, transport: AsyncHTTPClientTransport())
+        /// - Parameters:
+        ///   - account: The account that account, position, order and TWAP reads use when they are given
+        ///     none. Pass the account's own address, not an API wallet's: an API wallet's address reads as
+        ///     an empty account. Defaults to the signer's address.
+        ///   - signer: Signs actions: the account's own key, or an API wallet's. Without one, actions throw
+        ///     ``ClientError/Reason/missingSigner``.
+        ///
+        /// With ``Configuration/vaultAddress`` set, reads given no account use the vault's address.
+        public convenience init(
+            account: Hyperliquid.Address? = nil, signer: (any Hyperliquid.Signer)? = nil, configuration: Configuration = .init()
+        ) {
+            self.init(account: account, signer: signer, configuration: configuration, transport: AsyncHTTPClientTransport())
         }
 
-        init(account: Hyperliquid.Address? = nil, configuration: Configuration, transport: any HTTPTransport) {
+        init(
+            account: Hyperliquid.Address? = nil, signer: (any Hyperliquid.Signer)? = nil, configuration: Configuration,
+            transport: any HTTPTransport, nonces: NonceSource = .shared
+        ) {
             let info = InfoClient(network: configuration.network, transport: transport, timeout: configuration.timeout)
+            let exchange = ExchangeClient(
+                url: configuration.network.apiURL.appending(path: "exchange"), network: configuration.network,
+                transport: transport, timeout: configuration.timeout, signer: signer,
+                vault: configuration.vaultAddress, nonces: nonces
+            )
             let directory = AssetDirectory(info: info)
+            let account = configuration.vaultAddress ?? account ?? signer?.address
             market = MarketRequests(info: info, directory: directory)
             self.account = AccountRequests(info: info, account: account)
             position = PositionRequests(info: info, directory: directory, account: account)
-            order = OrderRequests(info: info, account: account)
+            order = OrderRequests(info: info, exchange: exchange, directory: directory, account: account)
             twap = TwapRequests(info: info, account: account)
         }
     }
@@ -42,10 +59,16 @@ extension Hyperliquid.Client {
         /// default, sets no limit beyond 10 seconds to connect. A request that takes longer throws
         /// ``Hyperliquid/ClientError/Reason/timedOut``.
         public var timeout: Duration?
+        /// The sub-account or vault that actions trade for. The signer must be its owner's key or one of
+        /// the owner's API wallets.
+        public var vaultAddress: Hyperliquid.Address?
 
-        public init(network: Hyperliquid.Network = .mainnet, timeout: Duration? = nil) {
+        public init(
+            network: Hyperliquid.Network = .mainnet, timeout: Duration? = nil, vaultAddress: Hyperliquid.Address? = nil
+        ) {
             self.network = network
             self.timeout = timeout
+            self.vaultAddress = vaultAddress
         }
     }
 }

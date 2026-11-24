@@ -42,3 +42,31 @@ extension InfoClient {
         InfoClient(network: network, transport: transport, timeout: nil)
     }
 }
+
+extension ExchangeClient {
+    /// A mainnet exchange client whose nonces start at `nonce`, with the Python SDK's test key as signer.
+    static func test(
+        _ transport: some HTTPTransport, signer: (any Hyperliquid.Signer)? = SigningFixtures.pythonTestSigner,
+        nonce: UInt64 = 0, vault: Hyperliquid.Address? = nil
+    ) -> ExchangeClient {
+        ExchangeClient(
+            url: Hyperliquid.Network.mainnet.apiURL.appending(path: "exchange"), network: .mainnet, transport: transport,
+            timeout: nil, signer: signer, vault: vault, nonces: NonceSource { nonce }
+        )
+    }
+}
+
+extension OrderRequests {
+    static func test(
+        _ transport: some HTTPTransport, account: Hyperliquid.Address? = nil,
+        signer: (any Hyperliquid.Signer)? = SigningFixtures.pythonTestSigner, nonce: UInt64 = 0,
+        vault: Hyperliquid.Address? = nil
+    ) -> OrderRequests {
+        let info = InfoClient.test(transport)
+        return OrderRequests(
+            info: info,
+            exchange: .test(transport, signer: signer, nonce: nonce, vault: vault),
+            directory: AssetDirectory(info: info), account: account
+        )
+    }
+}

@@ -20,11 +20,20 @@ extension Hyperliquid {
         /// For diagnostics only: its type differs between platforms and library versions, so don't
         /// match on it.
         public var underlyingError: (any Error)?
+        /// The nonce of the action that failed, when an action failed on the network.
+        ///
+        /// A timed-out or dropped action may still have reached Hyperliquid and may still execute.
+        /// `order.invalidate(nonce:)` spends this nonce: if it reaches Hyperliquid first, the action can
+        /// no longer execute, since Hyperliquid accepts each nonce once.
+        public var nonce: UInt64?
 
-        public init(_ reason: Reason, message: String? = nil, underlyingError: (any Error)? = nil) {
+        public init(
+            _ reason: Reason, message: String? = nil, underlyingError: (any Error)? = nil, nonce: UInt64? = nil
+        ) {
             self.reason = reason
             self.message = message
             self.underlyingError = underlyingError
+            self.nonce = nonce
         }
 
         public var description: String {
@@ -63,6 +72,12 @@ extension Hyperliquid.ClientError {
         /// A string isn't a client order ID: `0x` and 32 hexadecimal digits.
         public static let invalidClientOrderID = Self(
             "invalidClientOrderID", summary: "The text isn't a client order ID"
+        )
+
+        /// The request can't be sent as built; ``Hyperliquid/ClientError/message`` names the field, such as
+        /// a price with more decimals than an action can carry (8).
+        public static let invalidRequest = Self(
+            "invalidRequest", summary: "The request can't be sent to Hyperliquid as built"
         )
 
         // MARK: Signing

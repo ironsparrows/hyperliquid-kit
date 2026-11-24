@@ -38,7 +38,7 @@ extension Decimal {
     /// negative zero, so `100.0` is `"100"` and `1e-7` is `"0.0000001"`.
     ///
     /// Signatures cover this text, so a trailing zero would change what is signed.
-    var wireString: String { description }
+    package var wireString: String { description }
 
     private static let wireLocale = Locale(identifier: "en_US_POSIX")
 

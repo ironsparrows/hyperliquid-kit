@@ -13,8 +13,9 @@ public struct HyperliquidError: Error, Sendable, CustomStringConvertible {
     public var httpStatus: Int?
     /// The raw response body, for diagnostics.
     public var body: Data?
-    /// The nonce of the action that failed. While it is unused, the action could still execute;
-    /// using the nonce for another action makes sure it never does.
+    /// The nonce of the action that failed. When the outcome is unclear, such as an answer the client
+    /// can't read, `order.invalidate(nonce:)` spends it: if that reaches Hyperliquid first, the action
+    /// can no longer execute.
     public var nonce: UInt64?
 
     public init(_ kind: Kind, message: String? = nil, httpStatus: Int? = nil, body: Data? = nil, nonce: UInt64? = nil) {

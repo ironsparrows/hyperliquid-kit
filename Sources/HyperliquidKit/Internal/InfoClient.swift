@@ -56,7 +56,7 @@ struct InfoClient: Sendable {
 
     /// For a 4xx status, the `msg` of a JSON error body `{code, msg, data}`; otherwise, and when the
     /// body isn't one, the whole body as text. Hyperliquid answers most errors in plain text.
-    private static func message(in body: Data, status: Int) -> String {
+    static func message(in body: Data, status: Int) -> String {
         struct ErrorBody: Decodable {
             let msg: String
         }

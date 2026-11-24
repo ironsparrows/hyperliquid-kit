@@ -5,6 +5,8 @@
 /// repository.
 enum SigningFixtures {
     static let pythonTestKey = "0x0123456789012345678901234567890123456789012345678901234567890123"
+    // The key is valid, so building the signer can't fail.
+    static let pythonTestSigner = try! Hyperliquid.PrivateKeySigner(hexKey: pythonTestKey)
 
     enum Action: String, CaseIterable, Sendable {
         case dummy, order, orderWithClientID, vault, trigger, scheduleCancel, scheduleCancelAtTime

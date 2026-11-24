@@ -4,7 +4,8 @@ extension Hyperliquid {
     /// An account's state: margin, balances, mode, fees, limits and history.
     ///
     /// Reached through ``API/account``. Every read takes the account's address in `user`; `nil` means
-    /// the client's account, and without one the read throws ``ClientError/Reason/missingAccount``
+    /// the client's account: its vault address when one is configured, else its account, else its
+    /// signer's address. Without any of them the read throws ``ClientError/Reason/missingAccount``
     /// before anything is sent. Pass the account's own address, not an API wallet's: an API wallet's
     /// address reads as an empty account.
     public protocol AccountAPI: Sendable {

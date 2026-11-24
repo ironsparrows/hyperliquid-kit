@@ -1,12 +1,18 @@
 public import Foundation
 
 extension Hyperliquid {
-    /// An account's orders and fills.
+    /// An account's orders and fills, and the actions that place, change and cancel orders.
     ///
     /// Reached through ``API/order``. Reads take the account's address in `user` as ``AccountAPI``
     /// does: `nil` means the client's account, and without one the read throws
     /// ``ClientError/Reason/missingAccount`` before anything is sent. Results include spot orders and
     /// fills; ``Coin/kind`` tells them apart.
+    ///
+    /// Actions are signed by the client's signer and throw ``ClientError/Reason/missingSigner`` without
+    /// one, and ``ClientError/Reason/unsupportedMarket`` for a spot or outcome coin, before anything is
+    /// sent. An action that fails on the network, that Hyperliquid rejects, or whose answer the client
+    /// can't read carries its nonce in the error. Cancelling the task throws `CancellationError`, which
+    /// carries none: an action cancelled after it was sent may still execute.
     public protocol OrderAPI: Sendable {
         // MARK: Orders
 
@@ -38,12 +44,63 @@ extension Hyperliquid {
         /// - Parameter aggregateByTime: Combines the partial fills of a crossing order that matched
         ///   several resting orders.
         func fills(from start: Date, to end: Date?, aggregateByTime: Bool, for user: Address?) async throws -> [Fill]
-    }
 
-    /// An order named by Hyperliquid's ID or by the app's client order ID.
-    public enum OrderIdentifier: Hashable, Sendable {
-        case id(OrderID)
-        case clientID(ClientOrderID)
+        // MARK: Actions
+
+        /// Places orders, signed by the client's signer. (`order`)
+        ///
+        /// Each order gets its own result: a rejected order doesn't throw. The call throws only when
+        /// Hyperliquid rejects the whole batch. An order whose price, size or trigger price has more
+        /// than 8 decimals throws ``ClientError/Reason/invalidRequest`` before anything is sent: it is
+        /// rejected, not rounded.
+        ///
+        /// - Parameter expiresAfter: When set, Hyperliquid rejects the action if it arrives after this
+        ///   time. An action rejected this way counts five times against the address's request limit.
+        func place(_ orders: [OrderRequest], grouping: Grouping, expiresAfter: Date?) async throws -> [PlacementResult]
+
+        /// Cancels orders by Hyperliquid's ID. (`cancel`)
+        ///
+        /// - Parameters:
+        ///   - fast: Hyperliquid rejects a fast cancel of a trigger order.
+        ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        func cancel(_ orders: [OrderReference], fast: Bool, expiresAfter: Date?) async throws -> [CancelResult]
+
+        /// Cancels orders by the app's client order ID. (`cancelByCloid`)
+        ///
+        /// - Parameters:
+        ///   - fast: Hyperliquid rejects a fast cancel of a trigger order.
+        ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        func cancel(clientIDs orders: [ClientOrderReference], fast: Bool, expiresAfter: Date?) async throws
+            -> [CancelResult]
+
+        /// Replaces orders: each is canceled and its new version placed. (`batchModify`)
+        ///
+        /// A new version whose price, size or trigger price has more than 8 decimals throws
+        /// ``ClientError/Reason/invalidRequest`` before anything is sent.
+        ///
+        /// - Parameters:
+        ///   - alwaysPlace: Places the new version even when the cancel fails. Without it, the new
+        ///     version must be a resting limit order (add-liquidity-only, or good-til-canceled that
+        ///     wouldn't match at once, which Hyperliquid then rests as add-liquidity-only).
+        ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        func modify(_ changes: [OrderChange], alwaysPlace: Bool, expiresAfter: Date?) async throws -> [PlacementResult]
+
+        /// Cancels all of the account's orders at `deadline`, at least 5 seconds ahead: a dead man's
+        /// switch. Hyperliquid triggers it at most 10 times a day. (`scheduleCancel`)
+        ///
+        /// - Parameter expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        func scheduleCancelAll(at deadline: Date, expiresAfter: Date?) async throws
+
+        /// Removes the scheduled cancel. (`scheduleCancel` without a time)
+        ///
+        /// - Parameter expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        func clearScheduledCancel(expiresAfter: Date?) async throws
+
+        /// Marks `nonce` as used, so an action sent with it can't execute: the way to stop an action
+        /// whose outcome is unknown after a timeout. (`noop`)
+        ///
+        /// - Parameter expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        func invalidate(nonce: UInt64, expiresAfter: Date?) async throws
     }
 }
 
@@ -94,5 +151,41 @@ extension Hyperliquid.OrderAPI {
         -> [Hyperliquid.Fill]
     {
         try await fills(from: start, to: end, aggregateByTime: false, for: user)
+    }
+
+    // MARK: Actions
+
+    public func place(
+        _ orders: [Hyperliquid.OrderRequest], grouping: Hyperliquid.Grouping = .standalone
+    ) async throws -> [Hyperliquid.PlacementResult] {
+        try await place(orders, grouping: grouping, expiresAfter: nil)
+    }
+
+    public func cancel(_ orders: [Hyperliquid.OrderReference], fast: Bool = false) async throws -> [Hyperliquid.CancelResult] {
+        try await cancel(orders, fast: fast, expiresAfter: nil)
+    }
+
+    public func cancel(
+        clientIDs orders: [Hyperliquid.ClientOrderReference], fast: Bool = false
+    ) async throws -> [Hyperliquid.CancelResult] {
+        try await cancel(clientIDs: orders, fast: fast, expiresAfter: nil)
+    }
+
+    public func modify(
+        _ changes: [Hyperliquid.OrderChange], alwaysPlace: Bool = false
+    ) async throws -> [Hyperliquid.PlacementResult] {
+        try await modify(changes, alwaysPlace: alwaysPlace, expiresAfter: nil)
+    }
+
+    public func scheduleCancelAll(at deadline: Date) async throws {
+        try await scheduleCancelAll(at: deadline, expiresAfter: nil)
+    }
+
+    public func clearScheduledCancel() async throws {
+        try await clearScheduledCancel(expiresAfter: nil)
+    }
+
+    public func invalidate(nonce: UInt64) async throws {
+        try await invalidate(nonce: nonce, expiresAfter: nil)
     }
 }
