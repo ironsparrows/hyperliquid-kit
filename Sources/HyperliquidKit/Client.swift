@@ -18,13 +18,14 @@ extension Hyperliquid {
         /// Creates a client for the configuration's network.
         ///
         /// - Parameters:
-        ///   - account: The account that account, position, order and TWAP reads use when they are given
-        ///     none. Pass the account's own address, not an API wallet's: an API wallet's address reads as
-        ///     an empty account. Defaults to the signer's address.
+        ///   - account: The account that account, position, order and TWAP reads and account streams use
+        ///     when they are given none. Pass the account's own address, not an API wallet's: an API
+        ///     wallet's address reads as an empty account. Defaults to the signer's address.
         ///   - signer: Signs actions: the account's own key, or an API wallet's. Without one, actions throw
         ///     ``ClientError/Reason/missingSigner``.
         ///
-        /// With ``Configuration/vaultAddress`` set, reads given no account use the vault's address.
+        /// With ``Configuration/vaultAddress`` set, reads and streams given no account use the vault's
+        /// address.
         public convenience init(
             account: Hyperliquid.Address? = nil, signer: (any Hyperliquid.Signer)? = nil, configuration: Configuration = .init()
         ) {
@@ -55,7 +56,7 @@ extension Hyperliquid {
             connection = StreamConnection(
                 url: configuration.network.streamURL, transport: webSocketTransport, directory: directory
             )
-            stream = Streams(connection: connection)
+            stream = Streams(connection: connection, account: account)
         }
 
         /// Closes the stream connection.

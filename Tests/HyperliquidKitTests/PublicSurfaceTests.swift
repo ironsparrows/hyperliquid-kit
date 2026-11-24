@@ -45,7 +45,8 @@ extension HyperliquidKitTests {
                 Hyperliquid.Twap.self, Hyperliquid.Twap.Status.self, Hyperliquid.TwapSliceFill.self,
                 Hyperliquid.TwapHistoryEntry.self,
                 Hyperliquid.TwapRequest.self, Hyperliquid.TwapPlacementResult.self,
-                (any Hyperliquid.StreamAPI).self, Hyperliquid.BestBidOffer.self,
+                (any Hyperliquid.StreamAPI).self, Hyperliquid.BestBidOffer.self, Hyperliquid.Batch<Hyperliquid.Fill>.self,
+                Hyperliquid.UserEvent.self, Hyperliquid.UserEvent.Liquidation.self,
             ]
             _ = types
         }

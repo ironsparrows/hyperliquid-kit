@@ -4,7 +4,9 @@ extension Hyperliquid {
     /// One funding payment on an account's position.
     public struct FundingPayment: Hashable, Sendable {
         public let time: Date
-        public let hash: TransactionHash
+        /// The transaction's hash. Reads always have it; stream pushes don't carry it, so it is `nil`
+        /// there.
+        public let hash: TransactionHash?
         public let coin: Coin
         /// The amount: positive when the account received funding, negative when it paid.
         /// Hyperliquid's `usdc`.
@@ -17,7 +19,7 @@ extension Hyperliquid {
         public let sampleCount: Int?
 
         public init(
-            time: Date, hash: TransactionHash, coin: Coin, usdc: Decimal, positionSize: Decimal, rate: Decimal,
+            time: Date, hash: TransactionHash?, coin: Coin, usdc: Decimal, positionSize: Decimal, rate: Decimal,
             sampleCount: Int? = nil
         ) {
             self.time = time
@@ -38,8 +40,8 @@ extension Hyperliquid.FundingPayment: Decodable {
         case time, hash, delta
     }
 
-    /// `delta` is `{type: "funding", coin, usdc, szi, fundingRate, nSamples}`.
-    private struct Delta: Decodable {
+    /// The payment's own fields: `{coin, usdc, szi, fundingRate, nSamples}`.
+    private struct Payment: Decodable {
         let coin: Hyperliquid.Coin
         let usdc: WireDecimal
         let szi: WireDecimal
@@ -47,15 +49,18 @@ extension Hyperliquid.FundingPayment: Decodable {
         let nSamples: Int?
     }
 
+    /// A read's payment nests its fields in `delta` beside `time` and `hash`; a stream's payment has
+    /// them beside `time`, without a hash.
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         time = try container.decode(WireDate.self, forKey: .time).value
-        hash = try container.decode(Hyperliquid.TransactionHash.self, forKey: .hash)
-        let delta = try container.decode(Delta.self, forKey: .delta)
-        coin = delta.coin
-        usdc = delta.usdc.value
-        positionSize = delta.szi.value
-        rate = delta.fundingRate.value
-        sampleCount = delta.nSamples
+        hash = try container.decodeIfPresent(Hyperliquid.TransactionHash.self, forKey: .hash)
+        let payment = container.contains(.delta)
+            ? try container.decode(Payment.self, forKey: .delta) : try Payment(from: decoder)
+        coin = payment.coin
+        usdc = payment.usdc.value
+        positionSize = payment.szi.value
+        rate = payment.fundingRate.value
+        sampleCount = payment.nSamples
     }
 }

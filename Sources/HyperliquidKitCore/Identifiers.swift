@@ -64,6 +64,13 @@ extension Hyperliquid {
         public var description: String { String(rawValue) }
     }
 
+    /// A liquidation's ID, assigned by Hyperliquid.
+    public struct LiquidationID: RawRepresentable, Hashable, Sendable, Codable, CustomStringConvertible {
+        public let rawValue: UInt64
+        public init(rawValue: UInt64) { self.rawValue = rawValue }
+        public var description: String { String(rawValue) }
+    }
+
     /// A trade's ID, assigned by Hyperliquid: a hash of the two matched orders' IDs.
     ///
     /// Not unique on its own; Hyperliquid identifies a trade by its block time, coin and ID together.

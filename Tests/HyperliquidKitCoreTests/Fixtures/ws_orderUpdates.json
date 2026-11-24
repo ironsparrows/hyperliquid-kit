@@ -1,0 +1,1 @@
+{"channel":"orderUpdates","data":[{"order":{"coin":"VVV","side":"B","limitPx":"25.199","sz":"25.56","oid":615278685317,"timestamp":1795532780630,"origSz":"25.56","cloid":"0x2ccd307b33ca3ff1b62a022c81ac1ed6"},"status":"open","statusTimestamp":1795532780630}]}

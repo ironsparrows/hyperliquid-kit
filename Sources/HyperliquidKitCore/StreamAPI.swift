@@ -7,19 +7,33 @@ extension Hyperliquid {
     /// ``disconnect()`` or the client is released. Streams of the same subscription share it: the
     /// subscription is sent for the first and removed when the last one ends.
     ///
+    /// Account streams take the account's address in `user` as ``AccountAPI`` does: `nil` means the
+    /// client's account. Pass the account's own address, not an API wallet's, which streams as an
+    /// empty account. Order updates, events and notifications stream one account at a time, since
+    /// their pushes don't say which account they are for. Unsubscribing isn't confirmed, so right
+    /// after the last stream of one account ends, pushes for it still on their way can reach a stream
+    /// just started for another account.
+    ///
     /// A stream ends:
     /// - with ``ClientError/Reason/connectionClosed`` when the connection drops; every stream on it
     ///   ends, and nothing reconnects: start the streams again to subscribe on a new connection;
     /// - with ``ClientError/Reason/connectionFailed`` when the connection can't open;
     /// - with ``ClientError/Reason/unknownCoin`` for a coin or perp DEX Hyperliquid doesn't list, or
     ///   ``ClientError/Reason/unsupportedMarket`` for a spot or outcome coin, checked before subscribing;
+    /// - with ``ClientError/Reason/missingAccount`` for an account stream given no `user` on a client
+    ///   without an account, before subscribing;
     /// - with ``ClientError/Reason/invalidRequest`` for an order book of a coin already streaming at
-    ///   another precision: Hyperliquid's pushes don't say which precision they are for;
+    ///   another precision, fills already streaming with the other `aggregateByTime`, or order
+    ///   updates, events or notifications already streaming for another account: Hyperliquid's
+    ///   pushes don't say which of them they are for;
     /// - with the decoding error when a push can't be read;
     /// - without an error after ``disconnect()``, or when the client is released.
     ///
-    /// Streams of state, such as a book or mids, keep only the latest push for a slow reader; streams of
-    /// events, such as trades and candle updates, keep every push in order.
+    /// Streams of state, such as a book, mids or an account's positions, keep only the latest push
+    /// for a slow reader; streams of events, such as trades, candle updates and fills, keep every
+    /// push in order. Streams that start with a snapshot of recent events yield a ``Batch`` per push,
+    /// which says whether it is that snapshot. Only the stream that starts a subscription gets its
+    /// snapshot; a stream that joins one already streaming gets the pushes from then on.
     public protocol StreamAPI: Sendable {
         /// The mid price of every market on a perp DEX; on the first perp DEX, markets that aren't
         /// perpetuals too. (`allMids`)
@@ -51,6 +65,69 @@ extension Hyperliquid {
         /// latest. (`activeAssetCtx`)
         func assetContext(_ coin: Coin) -> AsyncThrowingStream<AssetContext, any Error>
 
+        // MARK: Account
+
+        /// Changes to the account's orders: each placement, fill, cancel or rejection, every update
+        /// kept in order. Whether Hyperliquid first sends the orders pending when subscribing isn't
+        /// documented; read them with ``OrderAPI/pendingDetailed(dex:for:)`` or
+        /// ``pendingOrders(dex:for:)``. (`orderUpdates`)
+        func orderUpdates(for user: Address?) -> AsyncThrowingStream<HistoricalOrder, any Error>
+
+        /// The account's fills: a snapshot of recent fills, then new ones, every batch kept in order.
+        /// (`userFills`)
+        ///
+        /// - Parameter aggregateByTime: Combines the partial fills of a crossing order that matched
+        ///   several resting orders.
+        func fills(aggregateByTime: Bool, for user: Address?) -> AsyncThrowingStream<Batch<Fill>, any Error>
+
+        /// The account's fills, funding payments, liquidations and the orders Hyperliquid canceled,
+        /// every event kept in order, with no snapshot. An event of a kind ``UserEvent`` doesn't
+        /// model arrives as ``UserEvent/unknown(kind:)``; a push holding several events yields each.
+        /// (`userEvents`)
+        func events(for user: Address?) -> AsyncThrowingStream<UserEvent, any Error>
+
+        /// The account's funding payments: a snapshot of recent payments, then each hour's, every batch
+        /// kept in order. (`userFundings`)
+        func fundingPayments(for user: Address?) -> AsyncThrowingStream<Batch<FundingPayment>, any Error>
+
+        /// Changes to the account's balances other than funding: a snapshot of recent ones, then new
+        /// ones, every batch kept in order. (`userNonFundingLedgerUpdates`)
+        func ledger(for user: Address?) -> AsyncThrowingStream<Batch<LedgerUpdate>, any Error>
+
+        /// The account's positions and margin on a perp DEX, pushed on subscribing and again every few
+        /// seconds, changed or not; a slow reader gets only the latest. (`clearinghouseState`)
+        func perpetualState(dex: PerpDex, for user: Address?) -> AsyncThrowingStream<PerpetualState, any Error>
+
+        /// The account's pending orders on a perp DEX with how they were placed, all of them in each
+        /// push, pushed on subscribing and again every few seconds; a slow reader gets only the
+        /// latest. (`openOrders`)
+        func pendingOrders(dex: PerpDex, for user: Address?) -> AsyncThrowingStream<[Order], any Error>
+
+        /// What the account can trade in a perpetual at its current leverage, pushed on subscribing
+        /// and again every few seconds; a slow reader gets only the latest. (`activeAssetData`)
+        func tradingLimits(_ coin: Coin, for user: Address?) -> AsyncThrowingStream<TradingLimits, any Error>
+
+        /// The account's token balances, all of them in each push, pushed on subscribing and again
+        /// every few seconds; a slow reader gets only the latest. (`spotState`)
+        func balances(for user: Address?) -> AsyncThrowingStream<[Balance], any Error>
+
+        /// Hyperliquid's notifications for the account as display text, such as
+        /// `"Resting order filled: Sold 6.7 HYPE at $61.819"`, every one kept in order.
+        /// (`notification`)
+        func notifications(for user: Address?) -> AsyncThrowingStream<String, any Error>
+
+        /// The account's running TWAP orders on a perp DEX by ID, all of them in each push, pushed on
+        /// subscribing and again every few seconds; a slow reader gets only the latest. (`twapStates`)
+        func twapStates(dex: PerpDex, for user: Address?) -> AsyncThrowingStream<[TwapID: Twap], any Error>
+
+        /// Fills of the account's TWAP slices: a snapshot of recent ones, then new ones, every batch
+        /// kept in order. (`userTwapSliceFills`)
+        func twapSliceFills(for user: Address?) -> AsyncThrowingStream<Batch<TwapSliceFill>, any Error>
+
+        /// The account's TWAP orders and the statuses they reach: a snapshot of recent ones, then new
+        /// ones, every batch kept in order. (`userTwapHistory`)
+        func twapHistory(for user: Address?) -> AsyncThrowingStream<Batch<TwapHistoryEntry>, any Error>
+
         /// Closes the connection and ends every stream without an error.
         func disconnect() async
     }
@@ -66,5 +143,89 @@ extension Hyperliquid.StreamAPI {
     /// A perpetual's book at full precision.
     public func orderBook(_ coin: Hyperliquid.Coin) -> AsyncThrowingStream<Hyperliquid.OrderBook, any Error> {
         orderBook(coin, precision: .full)
+    }
+
+    // MARK: Account
+
+    public func orderUpdates() -> AsyncThrowingStream<Hyperliquid.HistoricalOrder, any Error> {
+        orderUpdates(for: nil)
+    }
+
+    public func fills(aggregateByTime: Bool) -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.Fill>, any Error> {
+        fills(aggregateByTime: aggregateByTime, for: nil)
+    }
+
+    /// An account's fills, not aggregated.
+    public func fills(for user: Hyperliquid.Address? = nil)
+        -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.Fill>, any Error>
+    {
+        fills(aggregateByTime: false, for: user)
+    }
+
+    public func events() -> AsyncThrowingStream<Hyperliquid.UserEvent, any Error> {
+        events(for: nil)
+    }
+
+    public func fundingPayments() -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.FundingPayment>, any Error> {
+        fundingPayments(for: nil)
+    }
+
+    public func ledger() -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.LedgerUpdate>, any Error> {
+        ledger(for: nil)
+    }
+
+    public func perpetualState(dex: Hyperliquid.PerpDex) -> AsyncThrowingStream<Hyperliquid.PerpetualState, any Error> {
+        perpetualState(dex: dex, for: nil)
+    }
+
+    /// An account's positions and margin on the first perp DEX.
+    public func perpetualState(for user: Hyperliquid.Address? = nil)
+        -> AsyncThrowingStream<Hyperliquid.PerpetualState, any Error>
+    {
+        perpetualState(dex: .first, for: user)
+    }
+
+    public func pendingOrders(dex: Hyperliquid.PerpDex) -> AsyncThrowingStream<[Hyperliquid.Order], any Error> {
+        pendingOrders(dex: dex, for: nil)
+    }
+
+    /// An account's pending orders on the first perp DEX.
+    public func pendingOrders(for user: Hyperliquid.Address? = nil)
+        -> AsyncThrowingStream<[Hyperliquid.Order], any Error>
+    {
+        pendingOrders(dex: .first, for: user)
+    }
+
+    public func tradingLimits(_ coin: Hyperliquid.Coin) -> AsyncThrowingStream<Hyperliquid.TradingLimits, any Error> {
+        tradingLimits(coin, for: nil)
+    }
+
+    public func balances() -> AsyncThrowingStream<[Hyperliquid.Balance], any Error> {
+        balances(for: nil)
+    }
+
+    public func notifications() -> AsyncThrowingStream<String, any Error> {
+        notifications(for: nil)
+    }
+
+    public func twapStates(dex: Hyperliquid.PerpDex)
+        -> AsyncThrowingStream<[Hyperliquid.TwapID: Hyperliquid.Twap], any Error>
+    {
+        twapStates(dex: dex, for: nil)
+    }
+
+    /// An account's running TWAP orders on the first perp DEX.
+    public func twapStates(for user: Hyperliquid.Address? = nil)
+        -> AsyncThrowingStream<[Hyperliquid.TwapID: Hyperliquid.Twap], any Error>
+    {
+        twapStates(dex: .first, for: user)
+    }
+
+    public func twapSliceFills() -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.TwapSliceFill>, any Error> {
+        twapSliceFills(for: nil)
+    }
+
+    public func twapHistory() -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.TwapHistoryEntry>, any Error> {
+        twapHistory(for: nil)
     }
 }

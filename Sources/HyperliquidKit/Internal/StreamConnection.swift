@@ -25,6 +25,9 @@ actor StreamConnection {
         /// whole connection when a subscription names a coin it doesn't know.
         var coin: Hyperliquid.Coin? = nil
         var dex: Hyperliquid.PerpDex? = nil
+        /// Why a request that differs from the one already streaming on the topic is refused, when
+        /// "other parameters" doesn't say it.
+        var conflict: String? = nil
     }
 
     /// One stream's end of a subscription.
@@ -198,7 +201,9 @@ actor StreamConnection {
             if let streaming = requests[topic], streaming != subscription.request {
                 // Pushes don't say which parameters they were sent for, so two variants can't share a topic.
                 throw Hyperliquid.ClientError(
-                    .invalidRequest, message: "\(topic.channel) for \(topic.key) is already streaming with other parameters"
+                    .invalidRequest,
+                    message: subscription.conflict
+                        ?? "\(topic.channel) for \(topic.key) is already streaming with other parameters"
                 )
             }
             let isFirst = subscribers[topic, default: []].isEmpty
@@ -347,10 +352,14 @@ actor StreamConnection {
     /// The topic of a push, from the push alone, or `nil` for a frame no stream reads: a pong, an error,
     /// an acknowledgement, a channel the client doesn't route, an empty trades push, or text that isn't
     /// JSON.
+    ///
+    /// Account pushes are keyed by their lower-cased `user`, except order updates, events (channel
+    /// `user`) and notifications, which carry none and share one topic per channel.
     static func topic(of frame: Data) -> Topic? {
         guard let push = try? JSONDecoder().decode(RoutingPush.self, from: frame), let fields = push.data else {
             return nil
         }
+        let user = fields.user?.lowercased()
         switch push.channel {
         case "allMids":
             // A push from the first perp DEX carries no `dex`.
@@ -360,6 +369,17 @@ actor StreamConnection {
         case "candle":
             guard let coin = fields.s, let interval = fields.i else { return nil }
             return Topic(channel: push.channel, key: "\(coin),\(interval)")
+        case "orderUpdates", "user", "notification":
+            return Topic(channel: push.channel, key: "")
+        case "userFills", "userFundings", "userNonFundingLedgerUpdates", "userTwapSliceFills", "userTwapHistory",
+            "spotState":
+            return user.map { Topic(channel: push.channel, key: $0) }
+        case "clearinghouseState", "openOrders", "twapStates":
+            guard let user, let dex = fields.dex else { return nil }
+            return Topic(channel: push.channel, key: "\(user),\(dex)")
+        case "activeAssetData":
+            guard let coin = fields.coin, let user else { return nil }
+            return Topic(channel: push.channel, key: "\(coin),\(user)")
         default:
             return nil
         }
@@ -375,18 +395,19 @@ actor StreamConnection {
     // MARK: Wire
 
     /// The fields a push is routed by: `{"channel": …, "data": …}`, where `data` is an object or, for
-    /// trades and a candle array, a list whose first item carries them.
+    /// trades, order updates and a candle array, a list whose first item carries them.
     private struct RoutingPush: Decodable {
         struct Fields: Decodable {
             let coin: String?
             let dex: String?
+            let user: String?
             let s: String?
             let i: String?
 
             init(from decoder: any Decoder) throws {
                 if var list = try? decoder.unkeyedContainer() {
                     guard !list.isAtEnd else {
-                        (coin, dex, s, i) = (nil, nil, nil, nil)
+                        (coin, dex, user, s, i) = (nil, nil, nil, nil, nil)
                         return
                     }
                     self = try list.decode(Fields.self)
@@ -395,12 +416,13 @@ actor StreamConnection {
                 let container = try decoder.container(keyedBy: CodingKeys.self)
                 coin = try? container.decodeIfPresent(String.self, forKey: .coin)
                 dex = try? container.decodeIfPresent(String.self, forKey: .dex)
+                user = try? container.decodeIfPresent(String.self, forKey: .user)
                 s = try? container.decodeIfPresent(String.self, forKey: .s)
                 i = try? container.decodeIfPresent(String.self, forKey: .i)
             }
 
             private enum CodingKeys: String, CodingKey {
-                case coin, dex, s, i
+                case coin, dex, user, s, i
             }
         }
 

@@ -1,9 +1,17 @@
 import Foundation
 import HyperliquidKitCore
 
-/// Live pushes over the client's ``StreamConnection``.
+/// Live pushes over the client's ``StreamConnection``: market streams here, account streams in
+/// `AccountStreams.swift`.
 struct Streams: Hyperliquid.StreamAPI {
     let connection: StreamConnection
+    /// The account that account streams given no user stream.
+    let account: Hyperliquid.Address?
+
+    init(connection: StreamConnection, account: Hyperliquid.Address? = nil) {
+        self.connection = connection
+        self.account = account
+    }
 
     func mids(dex: Hyperliquid.PerpDex) -> AsyncThrowingStream<[Hyperliquid.Coin: Decimal], any Error> {
         connection.stream(.allMids(dex), buffering: .latest) { data in
@@ -50,7 +58,7 @@ struct Streams: Hyperliquid.StreamAPI {
     }
 
     /// The `data` of a push `{"channel": …, "data": …}`.
-    private static func payload<Payload: Decodable>(_ type: Payload.Type, of data: Data) throws -> Payload {
+    static func payload<Payload: Decodable>(_ type: Payload.Type, of data: Data) throws -> Payload {
         try JSONDecoder().decode(Push<Payload>.self, from: data).data
     }
 }
