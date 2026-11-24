@@ -10,7 +10,6 @@ import NIOHTTP1
 /// or ``Hyperliquid/ClientError/Reason/connectionFailed``, so apps never see AsyncHTTPClient's or
 /// SwiftNIO's error types. `CancellationError` passes through.
 struct AsyncHTTPClientTransport: HTTPTransport {
-    var client: HTTPClient = .hyperliquid
     /// The largest response body read. `allPerpMetas`, among the largest responses, is about 90 KB.
     var maximumResponseSize = 32 * 1024 * 1024
 
@@ -23,6 +22,9 @@ struct AsyncHTTPClientTransport: HTTPTransport {
             // AsyncHTTPClient's deadline ends when the response head arrives, so the body gets the
             // time that is left.
             let deadline = request.timeout.map { ContinuousClock.now + $0 }
+            // Without a deadline, a connection that can't be made must fail rather than be tried again
+            // forever; with one, trying again until the deadline rides out a brief outage.
+            let client: HTTPClient = request.timeout == nil ? .hyperliquidWithoutRetries : .hyperliquid
             let response = try await client.execute(
                 outgoing, deadline: request.timeout.map { .now() + TimeAmount($0) } ?? .distantFuture
             )
@@ -46,8 +48,6 @@ struct AsyncHTTPClientTransport: HTTPTransport {
         switch error {
         case is CancellationError:
             error
-        case let error as HTTPClientError where error == .cancelled:
-            CancellationError()
         case let error as HTTPClientError where timeouts.contains(error):
             Hyperliquid.ClientError(.timedOut, underlyingError: error)
         case is NIOTooManyBytesError:
@@ -86,14 +86,20 @@ private func withDeadline<Result: Sendable>(
 }
 
 extension HTTPClient {
-    /// The client every `Hyperliquid.Client` sends with: the shared client's settings without a read
-    /// timeout, so a request's only limit is the configured timeout. A connection that can't be made
-    /// fails within AsyncHTTPClient's 10-second connect limit instead of being tried again until the
-    /// request's deadline, which without a timeout never comes.
-    static let hyperliquid: HTTPClient = {
+    /// The client for requests with a timeout: the shared client's settings without a read timeout, so
+    /// a request's only limit is the configured timeout. A connection that can't be made is tried again
+    /// until that deadline.
+    static let hyperliquid = HTTPClient(retryingConnections: true)
+
+    /// The client for requests without a timeout: a connection that can't be made fails within
+    /// AsyncHTTPClient's 10-second connect limit, with every request waiting for it, instead of being
+    /// tried again forever.
+    static let hyperliquidWithoutRetries = HTTPClient(retryingConnections: false)
+
+    private convenience init(retryingConnections: Bool) {
         var configuration = HTTPClient.Configuration.singletonConfiguration
         configuration.timeout = .init(connect: nil, read: nil)
-        configuration.connectionPool.retryConnectionEstablishment = false
-        return HTTPClient(eventLoopGroup: HTTPClient.defaultEventLoopGroup, configuration: configuration)
-    }()
+        configuration.connectionPool.retryConnectionEstablishment = retryingConnections
+        self.init(eventLoopGroup: HTTPClient.defaultEventLoopGroup, configuration: configuration)
+    }
 }

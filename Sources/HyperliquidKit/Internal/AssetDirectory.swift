@@ -64,9 +64,10 @@ actor AssetDirectory {
         do {
             return try await task.valueUnlessCancelled
         } catch {
-            // Forget a failed load so the next lookup tries again, unless another caller already did.
-            // A waiter cancelled while the load runs leaves it for the others.
-            if !(error is CancellationError), universes[dex] == task { universes[dex] = nil }
+            // Forget a failed load so the next lookup tries again, unless another caller already did. A
+            // lookup cancelled while the load runs leaves it for the others; if that load then fails,
+            // the next lookup gets its error and forgets it.
+            if !(error is CancellationError && Task.isCancelled), universes[dex] == task { universes[dex] = nil }
             throw error
         }
     }
@@ -83,7 +84,7 @@ actor AssetDirectory {
         do {
             indexes = try await task.valueUnlessCancelled
         } catch {
-            if !(error is CancellationError), dexIndexes == task { dexIndexes = nil }
+            if !(error is CancellationError && Task.isCancelled), dexIndexes == task { dexIndexes = nil }
             throw error
         }
         guard let index = indexes[dex] else {
