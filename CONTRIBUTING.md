@@ -122,15 +122,15 @@ A pull request's label decides the release its merge makes:
 
 | Label | Release | Example |
 |---|---|---|
-| `release:patch` | a fix | 0.1.0 to 0.1.1 |
-| `release:minor` | a new feature | 0.1.0 to 0.2.0 |
-| `release:major` | a breaking change | 0.1.0 to 0.2.0 before 1.0, and 1.2.0 to 2.0.0 after it |
+| `release:patch` | a fix | 1.0.0 to 1.0.1 |
+| `release:minor` | a new feature | 1.0.0 to 1.1.0 |
+| `release:major` | a breaking change | 1.2.0 to 2.0.0 |
 | none | nothing | |
 
-When a labeled pull request merges into `main`, `.github/workflows/release.yml` first builds and tests on macOS and Linux, builds for iOS, tvOS and visionOS, and builds the documentation. Only when all of them pass does it tag the next version, publish a GitHub release whose notes group the merged pull requests by these labels (`.github/release.yml`), and start `.github/workflows/documentation.yml`, which publishes that release's documentation to GitHub Pages. Running the release workflow by hand from `main`, with the bump to apply, does the same. The workflow tags no version before the first, so `0.1.0` is released by hand, as a GitHub release rather than a bare tag, since the documentation workflow publishes the latest release; then start the documentation workflow. `1.0.0` is released by hand too.
+When a labeled pull request merges into `main`, `.github/workflows/release.yml` first builds and tests on macOS and Linux, builds for iOS, tvOS and visionOS, and builds the documentation. Only when all of them pass does it tag the next version, publish a GitHub release whose notes group the merged pull requests by these labels (`.github/release.yml`), and start `.github/workflows/documentation.yml`, which publishes that release's documentation to GitHub Pages. Running the release workflow by hand from `main`, with the bump to apply, does the same. The workflow tags no version before the first, so `1.0.0` is released by hand, as a GitHub release rather than a bare tag, since the documentation workflow publishes the latest release; then start the documentation workflow.
 
 ```bash
-gh release create 0.1.0 --target <commit on main> --generate-notes
+gh release create 1.0.0 --target <commit on main> --generate-notes
 ```
 
 ```bash
