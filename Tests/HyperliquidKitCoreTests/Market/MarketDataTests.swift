@@ -1,5 +1,6 @@
 import Foundation
 import HyperliquidKitCore
+import HyperliquidKitTestSupport
 import Testing
 
 extension HyperliquidKitCoreTests {
@@ -8,11 +9,11 @@ extension HyperliquidKitCoreTests {
         private let decoder = JSONDecoder()
 
         @Test func `mids decode keyed by coin, spot and HIP-3 coins included`() throws {
-            let mids = try decoder.decode([Hyperliquid.Coin: WireDecimal].self, from: Fixture.data("allMids"))
+            let mids = try decoder.decode([Hyperliquid.Coin: WireDecimal].self, from: Fixture.data("allMids", in: .market))
             #expect(mids.count == 1430)
             #expect(mids["BTC"]?.value == Decimal(59664))
             #expect(mids["@107"]?.value == Decimal(string: "62.3375"))
-            let xyz = try decoder.decode([Hyperliquid.Coin: WireDecimal].self, from: Fixture.data("allMids_xyz"))
+            let xyz = try decoder.decode([Hyperliquid.Coin: WireDecimal].self, from: Fixture.data("allMids_xyz", in: .market))
             #expect(xyz["xyz:XYZ100"]?.value == Decimal(26264))
         }
 
@@ -25,7 +26,7 @@ extension HyperliquidKitCoreTests {
         }
 
         @Test func `an order book decodes bids then asks, 20 levels each`() throws {
-            let book = try decoder.decode(Hyperliquid.OrderBook.self, from: Fixture.data("l2Book"))
+            let book = try decoder.decode(Hyperliquid.OrderBook.self, from: Fixture.data("l2Book", in: .market))
             #expect(book.coin == "BTC")
             #expect(book.time == Date(timeIntervalSince1970: 1_795_518_755.141))
             #expect(book.bids.count == 20)
@@ -40,7 +41,7 @@ extension HyperliquidKitCoreTests {
         }
 
         @Test func `candles decode with their interval and times`() throws {
-            let candles = try decoder.decode([Hyperliquid.Candle].self, from: Fixture.data("candleSnapshot"))
+            let candles = try decoder.decode([Hyperliquid.Candle].self, from: Fixture.data("candleSnapshot", in: .market))
             #expect(candles.count == 7)
             let first = try #require(candles.first)
             #expect(first.coin == "BTC")
@@ -56,7 +57,7 @@ extension HyperliquidKitCoreTests {
         }
 
         @Test func `recent trades decode with their ID, buyer and seller`() throws {
-            let trades = try decoder.decode([Hyperliquid.Trade].self, from: Fixture.data("recentTrades"))
+            let trades = try decoder.decode([Hyperliquid.Trade].self, from: Fixture.data("recentTrades", in: .market))
             #expect(trades.count == 10)
             let first = try #require(trades.first)
             #expect(first.side == .buy)
@@ -69,24 +70,24 @@ extension HyperliquidKitCoreTests {
         }
 
         @Test func `funding rates decode on the first perp DEX and a builder-deployed one`() throws {
-            let rates = try decoder.decode([Hyperliquid.FundingRate].self, from: Fixture.data("fundingHistory"))
+            let rates = try decoder.decode([Hyperliquid.FundingRate].self, from: Fixture.data("fundingHistory", in: .market))
             #expect(rates.count == 5)
             #expect(rates.first == .init(
                 coin: "BTC", rate: Decimal(string: "0.0000056633")!, premium: Decimal(string: "-0.0004546934")!,
                 time: Date(timeIntervalSince1970: 1_795_503_600.022)
             ))
-            let xyz = try decoder.decode([Hyperliquid.FundingRate].self, from: Fixture.data("fundingHistory_xyz"))
+            let xyz = try decoder.decode([Hyperliquid.FundingRate].self, from: Fixture.data("fundingHistory_xyz", in: .market))
             #expect(xyz.allSatisfy { $0.coin.dex == .named("xyz") })
         }
 
         @Test func `perpetuals at their open interest cap decode as coins`() throws {
-            let coins = try decoder.decode([Hyperliquid.Coin].self, from: Fixture.data("perpsAtOpenInterestCap"))
+            let coins = try decoder.decode([Hyperliquid.Coin].self, from: Fixture.data("perpsAtOpenInterestCap", in: .market))
             #expect(coins.first == "CANTO")
             #expect(coins.count == 10)
         }
 
         @Test func `predicted fundings decode each venue's prediction and leave out the null ones`() throws {
-            let fundings = try decoder.decode([Hyperliquid.PredictedFunding].self, from: Fixture.data("predictedFundings"))
+            let fundings = try decoder.decode([Hyperliquid.PredictedFunding].self, from: Fixture.data("predictedFundings", in: .market))
             #expect(fundings.count == 235)
             #expect(fundings.flatMap(\.venues).count == 631)
             let first = try #require(fundings.first)
@@ -97,7 +98,7 @@ extension HyperliquidKitCoreTests {
         }
 
         @Test func `a builder-deployed perp DEX's limits decode`() throws {
-            let limits = try decoder.decode(Hyperliquid.PerpDex.Limits.self, from: Fixture.data("perpDexLimits_xyz"))
+            let limits = try decoder.decode(Hyperliquid.PerpDex.Limits.self, from: Fixture.data("perpDexLimits_xyz", in: .market))
             #expect(limits.totalOpenInterestCap == Decimal(10_000_000_000))
             #expect(limits.openInterestSizeCapPerPerpetual == Decimal(20_000_000_000))
             #expect(limits.maxTransferNotional == Decimal(3_000_000_000))
@@ -106,9 +107,9 @@ extension HyperliquidKitCoreTests {
         }
 
         @Test func `a perp DEX's status and the exchange status decode`() throws {
-            let status = try decoder.decode(Hyperliquid.PerpDex.Status.self, from: Fixture.data("perpDexStatus_xyz"))
+            let status = try decoder.decode(Hyperliquid.PerpDex.Status.self, from: Fixture.data("perpDexStatus_xyz", in: .market))
             #expect(status.totalNetDeposit == Decimal(string: "1093777245.6014618874"))
-            let exchange = try decoder.decode(Hyperliquid.ExchangeStatus.self, from: Fixture.data("exchangeStatus"))
+            let exchange = try decoder.decode(Hyperliquid.ExchangeStatus.self, from: Fixture.data("exchangeStatus", in: .market))
             #expect(exchange.time == Date(timeIntervalSince1970: 1_795_518_752.9))
         }
 

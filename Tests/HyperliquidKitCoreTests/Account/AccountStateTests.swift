@@ -1,5 +1,6 @@
 import Foundation
 import HyperliquidKitCore
+import HyperliquidKitTestSupport
 import Testing
 
 extension HyperliquidKitCoreTests {
@@ -14,13 +15,13 @@ extension HyperliquidKitCoreTests {
         // MARK: Perpetual state
 
         @Test func `a perpetual state without positions decodes on the first and a builder-deployed perp DEX`() throws {
-            let state = try decoder.decode(Hyperliquid.PerpetualState.self, from: Fixture.data("clearinghouseState"))
+            let state = try decoder.decode(Hyperliquid.PerpetualState.self, from: Fixture.data("clearinghouseState", in: .account))
             #expect(state.positions.isEmpty)
             #expect(state.marginSummary.accountValue == Decimal(string: "565.136441"))
             #expect(state.crossMarginSummary.totalRawUSD == Decimal(string: "565.136441"))
             #expect(state.withdrawable == Decimal(string: "565.136441"))
             #expect(state.time == Date(timeIntervalSince1970: 1_795_519_902.721))
-            let xyz = try decoder.decode(Hyperliquid.PerpetualState.self, from: Fixture.data("clearinghouseState_xyz"))
+            let xyz = try decoder.decode(Hyperliquid.PerpetualState.self, from: Fixture.data("clearinghouseState_xyz", in: .account))
             #expect(xyz.marginSummary.accountValue == Decimal(string: "2802.5"))
         }
 
@@ -55,7 +56,7 @@ extension HyperliquidKitCoreTests {
         // MARK: Balances, mode, limits
 
         @Test func `balances decode, a balance without a token index included`() throws {
-            let state = try decoder.decode(SpotState.self, from: Fixture.data("spotClearinghouseState"))
+            let state = try decoder.decode(SpotState.self, from: Fixture.data("spotClearinghouseState", in: .account))
             #expect(state.balances.count == 176)
             #expect(state.balances.first == .init(
                 token: "USDC", tokenIndex: 0, total: Decimal(string: "1019.97983005")!, hold: 0, entryNotional: 0
@@ -65,11 +66,11 @@ extension HyperliquidKitCoreTests {
         }
 
         @Test func `the account mode decodes`() throws {
-            #expect(try decoder.decode(Hyperliquid.AccountMode.self, from: Fixture.data("userAbstraction")) == .default)
+            #expect(try decoder.decode(Hyperliquid.AccountMode.self, from: Fixture.data("userAbstraction", in: .account)) == .default)
         }
 
         @Test func `trading limits decode with both pairs in Hyperliquid's order`() throws {
-            let limits = try decoder.decode(Hyperliquid.TradingLimits.self, from: Fixture.data("activeAssetData"))
+            let limits = try decoder.decode(Hyperliquid.TradingLimits.self, from: Fixture.data("activeAssetData", in: .position))
             #expect(limits.coin == "BTC")
             #expect(limits.leverage == .cross(20))
             #expect(limits.maxTradeSizes == [0, 0])
@@ -87,7 +88,7 @@ extension HyperliquidKitCoreTests {
         // MARK: Fees and limits
 
         @Test func `fees decode with their daily volumes and schedule`() throws {
-            let fees = try decoder.decode(Hyperliquid.Fees.self, from: Fixture.data("userFees"))
+            let fees = try decoder.decode(Hyperliquid.Fees.self, from: Fixture.data("userFees", in: .account))
             #expect(fees.takerRate == Decimal(string: "0.0004"))
             #expect(fees.makerRate == Decimal(string: "0.00012"))
             #expect(fees.spotTakerRate == Decimal(string: "0.0006"))
@@ -120,7 +121,7 @@ extension HyperliquidKitCoreTests {
         }
 
         @Test func `the rate limit decodes`() throws {
-            let limit = try decoder.decode(Hyperliquid.RateLimit.self, from: Fixture.data("userRateLimit"))
+            let limit = try decoder.decode(Hyperliquid.RateLimit.self, from: Fixture.data("userRateLimit", in: .account))
             #expect(limit == .init(
                 cumulativeVolume: Decimal(string: "151392758.400000006")!, requestsUsed: 0, requestsCap: 151_402_758,
                 requestsSurplus: 0
@@ -143,7 +144,7 @@ extension HyperliquidKitCoreTests {
         }
 
         @Test func `the recorded role decodes`() throws {
-            #expect(try decoder.decode(Hyperliquid.AccountRole.self, from: Fixture.data("userRole")).kind == .user)
+            #expect(try decoder.decode(Hyperliquid.AccountRole.self, from: Fixture.data("userRole", in: .account)).kind == .user)
         }
 
         @Test func `a sub-account decodes with its perpetual state and balances`() throws {
@@ -168,7 +169,7 @@ extension HyperliquidKitCoreTests {
         // MARK: History
 
         @Test func `the portfolio decodes every window`() throws {
-            let portfolio = try decoder.decode(Hyperliquid.Portfolio.self, from: Fixture.data("portfolio"))
+            let portfolio = try decoder.decode(Hyperliquid.Portfolio.self, from: Fixture.data("portfolio", in: .account))
             #expect(Set(portfolio.histories.keys) == [
                 .day, .week, .month, .allTime, .perpetualsDay, .perpetualsWeek, .perpetualsMonth, .perpetualsAllTime,
             ])
@@ -203,7 +204,7 @@ extension HyperliquidKitCoreTests {
         }
 
         @Test func `recorded ledger updates decode their transfers and spot genesis`() throws {
-            let updates = try decoder.decode([Hyperliquid.LedgerUpdate].self, from: Fixture.data("userNonFundingLedgerUpdates"))
+            let updates = try decoder.decode([Hyperliquid.LedgerUpdate].self, from: Fixture.data("userNonFundingLedgerUpdates", in: .account))
             #expect(updates.count == 8)
             guard case .internalTransfer(let usdc, let user, let destination, let fee) = updates.first?.change else {
                 Issue.record("Expected an internal transfer, got \(String(describing: updates.first?.change))")

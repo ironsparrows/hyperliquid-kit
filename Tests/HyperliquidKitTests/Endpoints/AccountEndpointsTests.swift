@@ -3,8 +3,8 @@ import Testing
 @testable import HyperliquidKit
 
 extension HyperliquidKitTests {
-    @Suite("Account and position requests")
-    struct AccountRequestsTests {
+    @Suite("Account and position endpoints")
+    struct AccountEndpointsTests {
         private static let account: Hyperliquid.Address = "0x00000000000000000000000000000000000000a1"
         private static let other: Hyperliquid.Address = "0x00000000000000000000000000000000000000b2"
         private static let state = #"{"marginSummary":{"accountValue":"1","totalNtlPos":"0","totalRawUsd":"1","totalMarginUsed":"0"},"crossMarginSummary":{"accountValue":"1","totalNtlPos":"0","totalRawUsd":"1","totalMarginUsed":"0"},"crossMaintenanceMarginUsed":"0","withdrawable":"1","assetPositions":[],"time":1795519902721}"#

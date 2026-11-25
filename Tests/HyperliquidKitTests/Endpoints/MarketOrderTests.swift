@@ -154,7 +154,7 @@ extension HyperliquidKitTests {
         @Test func `a client with a vault closes the vault's position`() async throws {
             let transport = Self.transport(Self.meta, Self.state("0.5"), Self.mids, Self.filled)
             let client = Hyperliquid.Client(
-                account: "0x0000000000000000000000000000000000000001", signer: SigningFixtures.pythonTestSigner,
+                account: "0x0000000000000000000000000000000000000001", signer: SigningVectors.pythonTestSigner,
                 configuration: .init(vaultAddress: "0x1719884eb866cb12b2287399b15f7db5e7d775ea"), transport: transport
             )
             _ = try await client.order.close("BTC")

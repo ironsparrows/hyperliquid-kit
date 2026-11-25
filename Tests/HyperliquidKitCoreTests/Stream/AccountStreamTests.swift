@@ -1,5 +1,6 @@
 import Foundation
 import HyperliquidKitCore
+import HyperliquidKitTestSupport
 import Testing
 
 extension HyperliquidKitCoreTests {
@@ -9,7 +10,7 @@ extension HyperliquidKitCoreTests {
 
         /// A field of the `data` of a recorded push `{"channel": …, "data": …}`, or the whole `data`, as JSON.
         private func payload(_ name: String, field: String? = nil) throws -> Data {
-            let push = try #require(try JSONSerialization.jsonObject(with: Fixture.data(name)) as? [String: Any])
+            let push = try #require(try JSONSerialization.jsonObject(with: Fixture.data(name, in: .stream)) as? [String: Any])
             var value = try #require(push["data"])
             if let field { value = try #require((value as? [String: Any])?[field]) }
             return try JSONSerialization.data(withJSONObject: value)
@@ -22,7 +23,7 @@ extension HyperliquidKitCoreTests {
         // MARK: Orders and fills
 
         @Test func `recorded order updates decode as orders with their statuses`() throws {
-            let updates = try decoder.decode([Hyperliquid.HistoricalOrder].self, from: payload("ws_orderUpdates"))
+            let updates = try decoder.decode([Hyperliquid.HistoricalOrder].self, from: payload("orderUpdates"))
             let update = try #require(updates.first)
             #expect(update.status == .open)
             #expect(update.order.coin == "VVV")
@@ -33,7 +34,7 @@ extension HyperliquidKitCoreTests {
         }
 
         @Test func `recorded fills decode, with a null TWAP ID`() throws {
-            let fills = try decoder.decode([Hyperliquid.Fill].self, from: payload("ws_userFills", field: "fills"))
+            let fills = try decoder.decode([Hyperliquid.Fill].self, from: payload("userFills", field: "fills"))
             let fill = try #require(fills.first)
             #expect(fill.coin == "VVV")
             #expect(fill.direction == .openLong)
@@ -43,7 +44,7 @@ extension HyperliquidKitCoreTests {
         }
 
         @Test func `recorded pending orders decode with how they were placed`() throws {
-            let orders = try decoder.decode([Hyperliquid.Order].self, from: payload("ws_openOrders", field: "orders"))
+            let orders = try decoder.decode([Hyperliquid.Order].self, from: payload("openOrders", field: "orders"))
             #expect(orders.count == 23)
             #expect(orders.allSatisfy { $0.details?.kind == .limit })
             #expect(orders.first?.details?.timeInForce == .addLiquidityOnly)
@@ -53,7 +54,7 @@ extension HyperliquidKitCoreTests {
 
         @Test func `a recorded perpetual state decodes its positions`() throws {
             let state = try decoder.decode(
-                Hyperliquid.PerpetualState.self, from: payload("ws_clearinghouseState", field: "clearinghouseState")
+                Hyperliquid.PerpetualState.self, from: payload("clearinghouseState", field: "clearinghouseState")
             )
             #expect(state.positions.count == 31)
             let btc = try #require(state.positions.first)
@@ -65,12 +66,12 @@ extension HyperliquidKitCoreTests {
         }
 
         @Test func `recorded trading limits and balances decode`() throws {
-            let limits = try decoder.decode(Hyperliquid.TradingLimits.self, from: payload("ws_activeAssetData"))
+            let limits = try decoder.decode(Hyperliquid.TradingLimits.self, from: payload("activeAssetData"))
             #expect(limits.coin == "BTC")
             #expect(limits.leverage == .cross(3))
             #expect(limits.maxTradeSizes == [Decimal(string: "75.25156")!, Decimal(string: "75.20254")!])
             #expect(limits.markPrice == Decimal(59886))
-            let balances = try decoder.decode(SpotState.self, from: payload("ws_spotState", field: "spotState")).balances
+            let balances = try decoder.decode(SpotState.self, from: payload("spotState", field: "spotState")).balances
             #expect(balances.map(\.token) == ["USDC", "HYPE"])
             #expect(balances.first?.total == Decimal(string: "5554.242992"))
         }
@@ -79,7 +80,7 @@ extension HyperliquidKitCoreTests {
 
         @Test func `recorded funding payments decode without a hash`() throws {
             let payments = try decoder.decode(
-                [Hyperliquid.FundingPayment].self, from: payload("ws_userFundings", field: "fundings")
+                [Hyperliquid.FundingPayment].self, from: payload("userFundings", field: "fundings")
             )
             #expect(payments.count == 100)
             let first = try #require(payments.first)
@@ -93,12 +94,12 @@ extension HyperliquidKitCoreTests {
 
         @Test func `recorded TWAP slice fills and history decode`() throws {
             let fills = try decoder.decode(
-                [Hyperliquid.TwapSliceFill].self, from: payload("ws_userTwapSliceFills", field: "twapSliceFills")
+                [Hyperliquid.TwapSliceFill].self, from: payload("userTwapSliceFills", field: "twapSliceFills")
             )
             #expect(fills.count == 30)
             #expect(fills.allSatisfy { $0.twapID == .init(rawValue: 2_814_131) && $0.fill.coin == "@107" })
             let history = try decoder.decode(
-                [Hyperliquid.TwapHistoryEntry].self, from: payload("ws_userTwapHistory", field: "history")
+                [Hyperliquid.TwapHistoryEntry].self, from: payload("userTwapHistory", field: "history")
             )
             #expect(history.map(\.status) == [.activated, .finished, .activated, .finished])
             #expect(history.first?.twap.duration == .seconds(300))
@@ -107,13 +108,13 @@ extension HyperliquidKitCoreTests {
         // MARK: Events
 
         @Test func `recorded fill and cancel events decode`() throws {
-            let fills = try decoder.decode(Hyperliquid.UserEvent.self, from: payload("ws_user_fills"))
+            let fills = try decoder.decode(Hyperliquid.UserEvent.self, from: payload("user_fills"))
             guard case .fills(let list) = fills else {
                 Issue.record("Expected fills, got \(fills)")
                 return
             }
             #expect(list.first?.coin == "VVV")
-            let cancel = try decoder.decode(Hyperliquid.UserEvent.self, from: payload("ws_user_nonUserCancel"))
+            let cancel = try decoder.decode(Hyperliquid.UserEvent.self, from: payload("user_nonUserCancel"))
             #expect(cancel == .nonUserCancel([.init(.init(rawValue: 615_277_885_225), coin: "ETH")]))
         }
 

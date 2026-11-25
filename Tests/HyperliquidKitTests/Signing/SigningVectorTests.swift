@@ -7,7 +7,7 @@ extension HyperliquidKitTests {
     @Suite("Signing vectors")
     struct SigningVectorTests {
         @Test(arguments: [
-            (SigningFixtures.Action.dummy, Hyperliquid.Network.mainnet, "0x53749d5b30552aeb2fca34b530185976545bb22d0b3ce6f62e31be961a59298", "0x755c40ba9bf05223521753995abb2f73ab3229be8ec921f350cb447e384d8ed8", 27),
+            (SigningVectors.Action.dummy, Hyperliquid.Network.mainnet, "0x53749d5b30552aeb2fca34b530185976545bb22d0b3ce6f62e31be961a59298", "0x755c40ba9bf05223521753995abb2f73ab3229be8ec921f350cb447e384d8ed8", 27),
             (.dummy, .testnet, "0x542af61ef1f429707e3c76c5293c80d01f74ef853e34b76efffcb57e574f9510", "0x17b8b32f086e8cdede991f1e2c529f5dd5297cbe8128500e00cbaf766204a613", 28),
             (.order, .mainnet, "0xd65369825a9df5d80099e513cce430311d7d26ddf477f5b3a33d2806b100d78e", "0x2b54116ff64054968aa237c20ca9ff68000f977c93289157748a3162b6ea940e", 28),
             (.order, .testnet, "0x82b2ba28e76b3d761093aaded1b1cdad4960b3af30212b343fb2e6cdfa4e3d54", "0x6b53878fc99d26047f4d7e8c90eb98955a109f44209163f52d8dc4278cbbd9f5", 27),
@@ -27,10 +27,10 @@ extension HyperliquidKitTests {
             (.subAccountTransfer, .testnet, "0xe26574013395ad55ee2f4e0575310f003c5bb3351b5425482e2969fa51543927", "0xefb08999196366871f919fd0e138b3a7f30ee33e678df7cfaf203e25f0a4278", 28),
         ])
         func `an action signs to the Python SDK's signature`(
-            action: SigningFixtures.Action, network: Hyperliquid.Network, r: String, s: String, v: Int
+            action: SigningVectors.Action, network: Hyperliquid.Network, r: String, s: String, v: Int
         ) async throws {
-            let signer = try Hyperliquid.PrivateKeySigner(hexKey: SigningFixtures.pythonTestKey)
-            let request = SigningFixtures.l1Action(action).signingRequest(on: network)
+            let signer = try Hyperliquid.PrivateKeySigner(hexKey: SigningVectors.pythonTestKey)
+            let request = SigningVectors.l1Action(action).signingRequest(on: network)
             let signature = try await signer.sign(request)
             #expect(signature.wireR == r)
             #expect(signature.wireS == s)
@@ -55,7 +55,7 @@ extension HyperliquidKitTests {
                     .init(name: "time", value: .uint64(1_687_816_341_423)),
                 ]
             )
-            let signer = try Hyperliquid.PrivateKeySigner(hexKey: SigningFixtures.pythonTestKey)
+            let signer = try Hyperliquid.PrivateKeySigner(hexKey: SigningVectors.pythonTestKey)
             let signature = try await signer.sign(typedData.signingRequest)
             #expect(signature.wireR == r)
             #expect(signature.wireS == s)

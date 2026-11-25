@@ -53,12 +53,12 @@ let package = Package(
             name: "HyperliquidKitTestSupport",
             dependencies: ["HyperliquidKitCore"],
             path: "Tests/HyperliquidKitTestSupport",
+            resources: [.copy("Fixtures")],
             swiftSettings: swiftSettings
         ),
         .testTarget(
             name: "HyperliquidKitCoreTests",
-            dependencies: ["HyperliquidKitCore"],
-            resources: [.copy("Fixtures")],
+            dependencies: ["HyperliquidKitCore", "HyperliquidKitTestSupport"],
             swiftSettings: swiftSettings
         ),
         .testTarget(
@@ -73,7 +73,6 @@ let package = Package(
                 .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
                 .product(name: "NIOWebSocket", package: "swift-nio"),
             ],
-            resources: [.copy("Fixtures")],
             swiftSettings: swiftSettings
         ),
     ]

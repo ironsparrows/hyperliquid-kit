@@ -1,4 +1,5 @@
 import Foundation
+import HyperliquidKitTestSupport
 import Testing
 @testable import HyperliquidKitCore
 
@@ -6,7 +7,7 @@ extension HyperliquidKitCoreTests {
     @Suite("Perpetual metadata")
     struct PerpetualTests {
         @Test func `the first perp DEX's meta decodes in asset-ID order with its margin tables`() throws {
-            let perpetuals = try JSONDecoder().decode(PerpetualMetadata.self, from: Fixture.data("meta")).perpetuals
+            let perpetuals = try JSONDecoder().decode(PerpetualMetadata.self, from: Fixture.data("meta", in: .market)).perpetuals
             let btc = try #require(perpetuals.first)
             #expect(btc.coin == "BTC")
             #expect(btc.sizeDecimals == 5)
@@ -24,13 +25,13 @@ extension HyperliquidKitCoreTests {
         }
 
         @Test func `a builder-deployed perp DEX's meta decodes with prefixed coins`() throws {
-            let perpetuals = try JSONDecoder().decode(PerpetualMetadata.self, from: Fixture.data("meta_xyz")).perpetuals
+            let perpetuals = try JSONDecoder().decode(PerpetualMetadata.self, from: Fixture.data("meta_xyz", in: .market)).perpetuals
             #expect(perpetuals.first?.coin == "xyz:XYZ100")
             #expect(perpetuals.allSatisfy { $0.coin.dex == .named("xyz") })
         }
 
         @Test func `every perp DEX's meta decodes`() throws {
-            let metas = try JSONDecoder().decode([PerpetualMetadata].self, from: Fixture.data("allPerpMetas"))
+            let metas = try JSONDecoder().decode([PerpetualMetadata].self, from: Fixture.data("allPerpMetas", in: .market))
             #expect(metas.first?.perpetuals.first?.coin == "BTC")
             #expect(metas.count > 1)
         }

@@ -1,10 +1,11 @@
 import Foundation
+import HyperliquidKitTestSupport
 import Testing
 @testable import HyperliquidKit
 
 extension HyperliquidKitTests {
     @Suite("Compressed market feeds", .timeLimit(.minutes(1)))
-    struct MarketFeedsTests {
+    struct CompressedFeedsTests {
         private static let meta = #"{"universe":[{"name":"BTC","szDecimals":5},{"name":"ETH","szDecimals":4}]}"#
 
         private static func streams(_ transport: FakeWebSocketTransport, http: FakeTransport = FakeTransport(json: meta))
@@ -71,7 +72,7 @@ extension HyperliquidKitTests {
             _ = try await session.sent(atLeast: 1)
             var rebuilt: [Date: Hyperliquid.OrderBook] = [:]
             var pushed: [Hyperliquid.OrderBook] = []
-            for frame in try Fixture.frames("ws_l2") {
+            for frame in try Fixture.frames("l2") {
                 let topic = StreamRouter.topic(of: Data(frame.utf8))
                 if topic == .init(channel: "l2Book", key: "BTC") {
                     pushed.append(try JSONDecoder().decode(Push.self, from: Data(frame.utf8)).data)
@@ -101,7 +102,7 @@ extension HyperliquidKitTests {
             let session = try await transport.session()
             _ = try await session.sent(atLeast: 1)
             var last: Hyperliquid.OrderBook?
-            for frame in try Fixture.frames("ws_l2") {
+            for frame in try Fixture.frames("l2") {
                 if StreamRouter.topic(of: Data(frame.utf8)) == .init(channel: "l2Book", key: "BTC") {
                     last = try JSONDecoder().decode(Push.self, from: Data(frame.utf8)).data
                 } else {
@@ -201,7 +202,7 @@ extension HyperliquidKitTests {
             var prices = streams.prices().makeAsyncIterator()
             let session = try await transport.session()
             _ = try await session.sent(atLeast: 1)
-            let frames = try Fixture.frames("ws_fastAssetCtxs")
+            let frames = try Fixture.frames("fastAssetCtxs")
             // Every push is merged, though the reader reads only after the last.
             for frame in frames { await session.push(frame) }
             // The reader gets some of the elements, ending with the state after the last push.
@@ -222,8 +223,8 @@ extension HyperliquidKitTests {
 
         @Test func `recorded asset contexts merge by position, naming the perp DEXs whose lists load`() async throws {
             let transport = FakeWebSocketTransport()
-            let meta = String(decoding: try Fixture.data("meta"), as: UTF8.self)
-            let cash = String(decoding: try Fixture.data("meta_cash"), as: UTF8.self)
+            let meta = String(decoding: try Fixture.data("meta", in: .market), as: UTF8.self)
+            let cash = String(decoding: try Fixture.data("meta_cash", in: .market), as: UTF8.self)
             let http = FakeTransport { body in
                 switch body {
                 case #"{"type":"meta","dex":""}"#: .json(meta)
@@ -235,7 +236,7 @@ extension HyperliquidKitTests {
             var contexts = streams.assetContexts().makeAsyncIterator()
             let session = try await transport.session()
             _ = try await session.sent(atLeast: 1)
-            let frames = try Fixture.frames("ws_pac")
+            let frames = try Fixture.frames("pac")
             // The lists load in the background; later pushes, here repeats of the last, name them.
             for frame in frames { await session.push(frame) }
             var merged = try #require(try await contexts.next())
@@ -298,7 +299,7 @@ extension HyperliquidKitTests {
         // MARK: Routing
 
         @Test func `a compressed diff is inflated while routing, and the whole-market feeds route by channel`() throws {
-            let diff = try #require(try Fixture.frames("ws_l2").first { $0.contains(#""data":{"c":"#) })
+            let diff = try #require(try Fixture.frames("l2").first { $0.contains(#""data":{"c":"#) })
             let routedDiff = try #require(StreamRouter.routed(Data(diff.utf8)))
             guard case .topic(let topic) = routedDiff.destination else {
                 Issue.record("Expected a topic, got \(routedDiff.destination)")
@@ -306,8 +307,8 @@ extension HyperliquidKitTests {
             }
             #expect(topic.channel == "l2")
             #expect(String(decoding: routedDiff.push.prefix(13), as: UTF8.self) == #"{"data":{"u":"#)
-            for (name, channel) in [("ws_pac", "pac"), ("ws_fastAssetCtxs", "fastAssetCtxs")] {
-                let frame = try #require(try Fixture.frames(name).first)
+            for channel in ["pac", "fastAssetCtxs"] {
+                let frame = try #require(try Fixture.frames(channel).first)
                 #expect(StreamRouter.topic(of: Data(frame.utf8)) == .init(channel: channel, key: ""))
             }
         }

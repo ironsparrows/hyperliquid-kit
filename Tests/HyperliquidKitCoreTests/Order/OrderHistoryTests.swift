@@ -1,5 +1,6 @@
 import Foundation
 import HyperliquidKitCore
+import HyperliquidKitTestSupport
 import Testing
 
 extension HyperliquidKitCoreTests {
@@ -74,7 +75,7 @@ extension HyperliquidKitCoreTests {
         // MARK: Fills
 
         @Test func `recorded fills decode`() throws {
-            let fills = try decoder.decode([Hyperliquid.Fill].self, from: Fixture.data("userFillsByTime"))
+            let fills = try decoder.decode([Hyperliquid.Fill].self, from: Fixture.data("userFillsByTime", in: .order))
             #expect(fills.count == 8)
             let first = try #require(fills.first)
             #expect(first.coin == "SHIA")
@@ -130,7 +131,7 @@ extension HyperliquidKitCoreTests {
         }
 
         @Test func `recorded TWAP history decodes, its time in seconds and the start in milliseconds`() throws {
-            let entries = try decoder.decode([Hyperliquid.TwapHistoryEntry].self, from: Fixture.data("twapHistory"))
+            let entries = try decoder.decode([Hyperliquid.TwapHistoryEntry].self, from: Fixture.data("twapHistory", in: .twap))
             #expect(entries.count == 86)
             let first = try #require(entries.first)
             #expect(first.twapID == .init(rawValue: 2_722_906))

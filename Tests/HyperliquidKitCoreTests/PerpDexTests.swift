@@ -1,12 +1,13 @@
 import Foundation
 import HyperliquidKitCore
+import HyperliquidKitTestSupport
 import Testing
 
 extension HyperliquidKitCoreTests {
     @Suite("Perp DEX details")
     struct PerpDexTests {
         @Test func `every builder-deployed perp DEX decodes after the first perp DEX's null`() throws {
-            let dexes = try JSONDecoder().decode([Hyperliquid.PerpDex.Details?].self, from: Fixture.data("perpDexs"))
+            let dexes = try JSONDecoder().decode([Hyperliquid.PerpDex.Details?].self, from: Fixture.data("perpDexs", in: .market))
             #expect(dexes.first == .some(nil))
             let xyz = try #require(dexes.dropFirst().first ?? nil)
             #expect(xyz.dex == .named("xyz"))

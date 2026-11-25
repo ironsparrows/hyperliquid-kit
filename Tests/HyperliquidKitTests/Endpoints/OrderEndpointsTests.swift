@@ -3,8 +3,8 @@ import Testing
 @testable import HyperliquidKit
 
 extension HyperliquidKitTests {
-    @Suite("Order and TWAP requests")
-    struct OrderRequestsTests {
+    @Suite("Order and TWAP endpoints")
+    struct OrderEndpointsTests {
         private static let account: Hyperliquid.Address = "0x00000000000000000000000000000000000000a1"
         private static let user = #""user":"0x00000000000000000000000000000000000000a1""#
 

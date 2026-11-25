@@ -1,5 +1,6 @@
 import Foundation
 import HyperliquidKitCore
+import HyperliquidKitTestSupport
 import Testing
 
 extension HyperliquidKitCoreTests {
@@ -7,21 +8,21 @@ extension HyperliquidKitCoreTests {
     struct MarketStreamTests {
         /// The `data` of a recorded push `{"channel": …, "data": …}`, as JSON.
         private func payload(_ name: String) throws -> Data {
-            let push = try #require(try JSONSerialization.jsonObject(with: Fixture.data(name)) as? [String: Any])
+            let push = try #require(try JSONSerialization.jsonObject(with: Fixture.data(name, in: .stream)) as? [String: Any])
             return try JSONSerialization.data(withJSONObject: try #require(push["data"]))
         }
 
         @Test func `a recorded book push decodes, on full and grouped precision`() throws {
-            let book = try JSONDecoder().decode(Hyperliquid.OrderBook.self, from: payload("ws_l2Book"))
+            let book = try JSONDecoder().decode(Hyperliquid.OrderBook.self, from: payload("l2Book"))
             #expect(book.coin == "BTC")
             #expect(book.time == Date(timeIntervalSince1970: 1_795_530_169.945))
             #expect(!book.bids.isEmpty && !book.asks.isEmpty)
-            let grouped = try JSONDecoder().decode(Hyperliquid.OrderBook.self, from: payload("ws_l2Book_ETH"))
+            let grouped = try JSONDecoder().decode(Hyperliquid.OrderBook.self, from: payload("l2Book_ETH"))
             #expect(grouped.coin == "ETH")
         }
 
         @Test func `a recorded best bid and offer push decodes`() throws {
-            let best = try JSONDecoder().decode(Hyperliquid.BestBidOffer.self, from: payload("ws_bbo"))
+            let best = try JSONDecoder().decode(Hyperliquid.BestBidOffer.self, from: payload("bbo"))
             #expect(best.coin == "BTC")
             #expect(best.bid == .init(price: Decimal(60326), size: Decimal(string: "2.03339")!, orderCount: 21))
             #expect(best.ask?.price == Decimal(60327))
@@ -37,13 +38,13 @@ extension HyperliquidKitCoreTests {
         }
 
         @Test func `a recorded trades push decodes every trade`() throws {
-            let trades = try JSONDecoder().decode([Hyperliquid.Trade].self, from: payload("ws_trades"))
+            let trades = try JSONDecoder().decode([Hyperliquid.Trade].self, from: payload("trades"))
             #expect(trades.count > 1)
             #expect(trades.allSatisfy { $0.coin == "BTC" })
         }
 
         @Test func `a recorded candle push decodes`() throws {
-            let candle = try JSONDecoder().decode(Hyperliquid.Candle.self, from: payload("ws_candle"))
+            let candle = try JSONDecoder().decode(Hyperliquid.Candle.self, from: payload("candle"))
             #expect(candle.coin == "BTC")
             #expect(candle.interval == .oneMinute)
             #expect(candle.openTime == Date(timeIntervalSince1970: 1_795_530_120))
@@ -55,10 +56,10 @@ extension HyperliquidKitCoreTests {
                 let coin: Hyperliquid.Coin
                 let ctx: Hyperliquid.AssetContext
             }
-            let btc = try JSONDecoder().decode(Push.self, from: payload("ws_activeAssetCtx"))
+            let btc = try JSONDecoder().decode(Push.self, from: payload("activeAssetCtx"))
             #expect(btc.coin == "BTC")
             #expect(btc.ctx.funding == Decimal(string: "-0.0000015398"))
-            let xyz = try JSONDecoder().decode(Push.self, from: payload("ws_activeAssetCtx_xyz"))
+            let xyz = try JSONDecoder().decode(Push.self, from: payload("activeAssetCtx_xyz"))
             #expect(xyz.coin.dex == .named("xyz"))
         }
     }

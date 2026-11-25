@@ -5,7 +5,7 @@ import Testing
 extension HyperliquidKitTests {
     @Suite("Private key signer")
     struct PrivateKeySignerTests {
-        private let key = SigningFixtures.pythonTestKey
+        private let key = SigningVectors.pythonTestKey
 
         @Test func `the signer's address is derived from its key`() throws {
             let signer = try Hyperliquid.PrivateKeySigner(hexKey: key)

@@ -1,9 +1,9 @@
 @testable import HyperliquidKit
 
-/// What the signing suites share. Hyperliquid's Python SDK publishes its test key and these actions
-/// in `tests/signing_test.py`. The key signs no real wallet's actions and is the only key in this
-/// repository.
-enum SigningFixtures {
+/// The key and actions the signing suites and the fakes sign with. Hyperliquid's Python SDK
+/// publishes its test key and these actions in `tests/signing_test.py`. The key signs no real
+/// wallet's actions and is the only key in this repository.
+enum SigningVectors {
     static let pythonTestKey = "0x0123456789012345678901234567890123456789012345678901234567890123"
     // The key is valid, so building the signer can't fail.
     static let pythonTestSigner = try! Hyperliquid.PrivateKeySigner(hexKey: pythonTestKey)

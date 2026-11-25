@@ -8,7 +8,7 @@ extension HyperliquidKitTests {
     @Suite("Documentation examples")
     struct DocumentationExampleTests {
         private static let root = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-            .deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent()
 
         @Test(arguments: [
             "README.md", "Sources/HyperliquidKit/HyperliquidKit.docc/HyperliquidKit.md",
@@ -50,7 +50,7 @@ extension HyperliquidKitTests {
         /// The non-blank lines of each `static func` in `DocumentationExamples.swift`, unindented to the
         /// function body's level.
         private static func functionBodies() throws -> [[String]] {
-            let url = root.appending(path: "Tests/HyperliquidKitTests/DocumentationExamples.swift")
+            let url = root.appending(path: "Tests/HyperliquidKitTests/PublicAPI/DocumentationExamples.swift")
             var bodies: [[String]] = []
             var body: [String]?
             for line in try String(contentsOf: url, encoding: .utf8).split(separator: "\n").map(String.init) {

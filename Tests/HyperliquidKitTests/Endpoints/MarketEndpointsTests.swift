@@ -3,8 +3,8 @@ import Testing
 @testable import HyperliquidKit
 
 extension HyperliquidKitTests {
-    @Suite("Market requests")
-    struct MarketRequestsTests {
+    @Suite("Market endpoints")
+    struct MarketEndpointsTests {
         private static let btcMeta = #"{"universe":[{"name":"BTC","szDecimals":5,"maxLeverage":40,"marginTableId":40}],"marginTables":[],"collateralToken":0}"#
         private static let xyzMeta = #"{"universe":[{"name":"xyz:XYZ100","szDecimals":4,"maxLeverage":30,"marginTableId":30}],"marginTables":[],"collateralToken":0}"#
         private static let perpDexs = #"[null,{"name":"xyz","fullName":"XYZ","deployer":"0x88806a71d74ad0a510b350545c9ae490912f0888"}]"#

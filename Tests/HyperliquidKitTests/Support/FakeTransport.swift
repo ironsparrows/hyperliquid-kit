@@ -55,7 +55,7 @@ extension InfoClient {
 extension ExchangeClient {
     /// A mainnet exchange client whose nonces start at `nonce`, with the Python SDK's test key as signer.
     static func test(
-        _ transport: some HTTPTransport, signer: (any Hyperliquid.Signer)? = SigningFixtures.pythonTestSigner,
+        _ transport: some HTTPTransport, signer: (any Hyperliquid.Signer)? = SigningVectors.pythonTestSigner,
         nonce: UInt64 = 0, vault: Hyperliquid.Address? = nil
     ) -> ExchangeClient {
         ExchangeClient(
@@ -68,7 +68,7 @@ extension ExchangeClient {
 extension OrderEndpoints {
     static func test(
         _ transport: some HTTPTransport, account: Hyperliquid.Address? = nil,
-        signer: (any Hyperliquid.Signer)? = SigningFixtures.pythonTestSigner, nonce: UInt64 = 0,
+        signer: (any Hyperliquid.Signer)? = SigningVectors.pythonTestSigner, nonce: UInt64 = 0,
         vault: Hyperliquid.Address? = nil
     ) -> OrderEndpoints {
         let info = InfoClient.test(transport)
@@ -83,7 +83,7 @@ extension OrderEndpoints {
 extension PositionEndpoints {
     static func test(
         _ transport: some HTTPTransport, account: Hyperliquid.Address? = nil,
-        signer: (any Hyperliquid.Signer)? = SigningFixtures.pythonTestSigner, nonce: UInt64 = 0
+        signer: (any Hyperliquid.Signer)? = SigningVectors.pythonTestSigner, nonce: UInt64 = 0
     ) -> PositionEndpoints {
         let info = InfoClient.test(transport)
         return PositionEndpoints(
@@ -96,7 +96,7 @@ extension PositionEndpoints {
 extension TwapEndpoints {
     static func test(
         _ transport: some HTTPTransport, account: Hyperliquid.Address? = nil,
-        signer: (any Hyperliquid.Signer)? = SigningFixtures.pythonTestSigner, nonce: UInt64 = 0
+        signer: (any Hyperliquid.Signer)? = SigningVectors.pythonTestSigner, nonce: UInt64 = 0
     ) -> TwapEndpoints {
         let info = InfoClient.test(transport)
         return TwapEndpoints(
