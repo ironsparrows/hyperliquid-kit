@@ -133,6 +133,9 @@ extension Hyperliquid {
 
         /// Removes the scheduled cancel. (`scheduleCancel` without a time)
         ///
+        /// Like scheduling one, Hyperliquid refuses this with `actionRejected` until the account has
+        /// traded enough volume.
+        ///
         /// - Parameter expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
         func clearScheduledCancel(expiresAfter: Date?) async throws
 
