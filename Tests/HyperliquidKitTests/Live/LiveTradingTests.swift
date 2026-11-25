@@ -19,5 +19,13 @@ extension HyperliquidKitTests {
             NSDecimalRound(&size, &exact, sizeDecimals, .up)
             return size
         }
+
+        /// BTC's mid price times `fraction`, in whole dollars, which Hyperliquid always accepts as a price.
+        static func btcPrice(times fraction: Decimal, on client: Hyperliquid.Client) async throws -> Decimal {
+            var exact = try #require(try await client.market.mids()["BTC"]) * fraction
+            var price = Decimal()
+            NSDecimalRound(&price, &exact, 0, .down)
+            return price
+        }
     }
 }

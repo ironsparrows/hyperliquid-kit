@@ -56,7 +56,7 @@ Linux has no local check yet. `swift build` and `swift test` on Linux are unveri
 
 Live tests run when an API wallet's key and the account's address are set; otherwise they skip. There is no other switch: with them set, every live suite runs, including those that place real orders, in a plain `swift test` and in Xcode's Test action too. `swift test --skip Live` leaves them out.
 
-**Four suites place small real orders on mainnet** with the API wallet, for the account, with real fees, in BTC. They run one at a time, nested in the "Live trading" suite. Each closes the size it ordered, not the size that filled, and cancels only its own orders; they add no checks or cleanup. So use an account with no BTC position or orders of its own: a close reduces whatever BTC position is open, and switching BTC to isolated margin can fail with one open. A failure partway can leave a position or an order open, or BTC's leverage changed: check the account after a failed run, and after any run whose TWAP filled a slice before it was canceled, which leaves that position open.
+**Five suites place small real orders on mainnet** with the API wallet, for the account, with real fees, in BTC. They run one at a time, nested in the "Live trading" suite. Each closes the size it ordered (Live order management, the size that filled) and cancels only its own orders; they add no checks or cleanup. Live order management also sets a cancel-all and clears it at once: if the clear fails, every open order on the account is canceled 60 seconds later. So use an account with no BTC position or orders of its own: a close reduces whatever BTC position is open, and switching BTC to isolated margin can fail with one open. A failure partway can leave a position or an order open, or BTC's leverage changed: check the account after a failed run, and after any run whose TWAP filled a slice before it was canceled, which leaves that position open.
 
 | Suite | What it does |
 |---|---|
@@ -68,6 +68,7 @@ Live tests run when an API wallet's key and the account's address are set; other
 | Live order actions | **Places an order:** rests a buy of about $11 of BTC 10% under the mid price, changes it and cancels it. |
 | Live market orders | **Trades:** buys about $11 of BTC with a market order and closes that size. |
 | Live leverage, margin and TWAP actions | **Trades:** sets BTC to 10× isolated; opens about $11 of BTC, adds $2 of margin and removes $1, closes that size, and sets BTC's leverage back; starts a $110 BTC TWAP over 7 days and cancels it. A slice that filled before the cancel stays open. |
+| Live order management | **Places orders and trades:** rests a buy about 10% under the mid price with a client order ID, finds, modifies and cancels it by that ID; rests another with a take-profit and a stop-loss child, cancels it and checks the children went with it; buys about $14 of BTC, adds a take-profit 50% above and a stop-loss 20% below, cancels both and closes the size that filled; sets a cancel-all 60 seconds ahead and clears it; spends a nonce and checks Hyperliquid refuses it a second time. |
 | Live account streams | **Trades:** streams the account while it buys about $11 of BTC with a market order and closes that size; the pushes must decode. |
 
 Set them in the environment, reading the key without echo so it stays out of your shell history:
