@@ -2,7 +2,7 @@ import Foundation
 import HyperliquidKitCore
 
 /// An account's position reads, from `/info`, and its leverage and margin actions, sent to `/exchange`.
-struct PositionRequests: Hyperliquid.PositionAPI {
+struct PositionEndpoints: Hyperliquid.PositionAPI {
     let info: InfoClient
     let exchange: ExchangeClient
     let directory: AssetDirectory
@@ -26,7 +26,7 @@ struct PositionRequests: Hyperliquid.PositionAPI {
 
 // MARK: - Actions
 
-extension PositionRequests {
+extension PositionEndpoints {
     func setLeverage(_ leverage: Hyperliquid.Leverage, for coin: Hyperliquid.Coin, expiresAfter: Date?) async throws {
         _ = try exchange.requireSigner()
         guard leverage.mode == .cross || leverage.mode == .isolated else {

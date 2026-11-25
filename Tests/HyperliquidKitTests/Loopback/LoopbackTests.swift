@@ -8,7 +8,7 @@ extension HyperliquidKitTests {
     struct LoopbackTests {
         private func market(_ url: URL, timeout: Duration? = nil) -> any Hyperliquid.MarketAPI {
             let info = InfoClient(url: url.appending(path: "info"), transport: AsyncHTTPClientTransport(), timeout: timeout)
-            return MarketRequests(info: info, directory: AssetDirectory(info: info))
+            return MarketEndpoints(info: info, directory: AssetDirectory(info: info))
         }
 
         @Test func `a read posts JSON and decodes the answer`() async throws {

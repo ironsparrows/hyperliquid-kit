@@ -65,14 +65,14 @@ extension ExchangeClient {
     }
 }
 
-extension OrderRequests {
+extension OrderEndpoints {
     static func test(
         _ transport: some HTTPTransport, account: Hyperliquid.Address? = nil,
         signer: (any Hyperliquid.Signer)? = SigningFixtures.pythonTestSigner, nonce: UInt64 = 0,
         vault: Hyperliquid.Address? = nil
-    ) -> OrderRequests {
+    ) -> OrderEndpoints {
         let info = InfoClient.test(transport)
-        return OrderRequests(
+        return OrderEndpoints(
             info: info,
             exchange: .test(transport, signer: signer, nonce: nonce, vault: vault),
             directory: AssetDirectory(info: info), account: account
@@ -80,26 +80,26 @@ extension OrderRequests {
     }
 }
 
-extension PositionRequests {
+extension PositionEndpoints {
     static func test(
         _ transport: some HTTPTransport, account: Hyperliquid.Address? = nil,
         signer: (any Hyperliquid.Signer)? = SigningFixtures.pythonTestSigner, nonce: UInt64 = 0
-    ) -> PositionRequests {
+    ) -> PositionEndpoints {
         let info = InfoClient.test(transport)
-        return PositionRequests(
+        return PositionEndpoints(
             info: info, exchange: .test(transport, signer: signer, nonce: nonce), directory: AssetDirectory(info: info),
             account: account
         )
     }
 }
 
-extension TwapRequests {
+extension TwapEndpoints {
     static func test(
         _ transport: some HTTPTransport, account: Hyperliquid.Address? = nil,
         signer: (any Hyperliquid.Signer)? = SigningFixtures.pythonTestSigner, nonce: UInt64 = 0
-    ) -> TwapRequests {
+    ) -> TwapEndpoints {
         let info = InfoClient.test(transport)
-        return TwapRequests(
+        return TwapEndpoints(
             info: info, exchange: .test(transport, signer: signer, nonce: nonce), directory: AssetDirectory(info: info),
             account: account
         )

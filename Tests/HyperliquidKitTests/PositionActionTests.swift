@@ -33,14 +33,14 @@ extension HyperliquidKitTests {
             leverage: Hyperliquid.Leverage, action: String
         ) async throws {
             let transport = Self.transport(Self.meta, Self.accepted)
-            try await PositionRequests.test(transport).setLeverage(leverage, for: "ETH")
+            try await PositionEndpoints.test(transport).setLeverage(leverage, for: "ETH")
             #expect(try await Self.action(transport) == action)
         }
 
         @Test func `leverage with a mode other than cross or isolated throws before anything is sent`() async {
             let transport = FakeTransport()
             await #expect {
-                try await PositionRequests.test(transport).setLeverage(.init(mode: .strictIsolated, value: 3), for: "ETH")
+                try await PositionEndpoints.test(transport).setLeverage(.init(mode: .strictIsolated, value: 3), for: "ETH")
             } throws: { error in
                 (error as? Hyperliquid.ClientError)?.reason == .invalidRequest
             }
@@ -54,14 +54,14 @@ extension HyperliquidKitTests {
         ])
         func `adjusting margin sends the amount in millionths of a dollar`(amount: Decimal, action: String) async throws {
             let transport = Self.transport(Self.meta, Self.accepted)
-            try await PositionRequests.test(transport).adjustMargin("BTC", by: amount)
+            try await PositionEndpoints.test(transport).adjustMargin("BTC", by: amount)
             #expect(try await Self.action(transport) == action)
         }
 
         @Test func `a margin amount with more than 6 decimals throws before anything is sent`() async {
             let transport = FakeTransport()
             await #expect {
-                try await PositionRequests.test(transport).adjustMargin("BTC", by: Decimal(string: "0.0000001")!)
+                try await PositionEndpoints.test(transport).adjustMargin("BTC", by: Decimal(string: "0.0000001")!)
             } throws: { error in
                 (error as? Hyperliquid.ClientError)?.reason == .invalidRequest
             }
@@ -70,7 +70,7 @@ extension HyperliquidKitTests {
 
         @Test func `topping up margin sends the leverage as text`() async throws {
             let transport = Self.transport(Self.meta, Self.accepted)
-            try await PositionRequests.test(transport).topUpMargin("ETH", toLeverage: Decimal(string: "2.50")!)
+            try await PositionEndpoints.test(transport).topUpMargin("ETH", toLeverage: Decimal(string: "2.50")!)
             #expect(try await Self.action(transport) == #"{"type":"topUpIsolatedOnlyMargin","asset":1,"leverage":"2.5"}"#)
         }
 
@@ -79,7 +79,7 @@ extension HyperliquidKitTests {
         @Test func `placing a TWAP sends its fields in order and returns its ID`() async throws {
             let running = #"{"status":"ok","response":{"type":"twapOrder","data":{"status":{"running":{"twapId":77738308}}}}}"#
             let transport = Self.transport(Self.meta, running)
-            let result = try await TwapRequests.test(transport).place(
+            let result = try await TwapEndpoints.test(transport).place(
                 .init(.sell, "ETH", size: Decimal(string: "0.010")!, duration: .seconds(300), reduceOnly: true, randomize: true)
             )
             #expect(result == .init(twapID: .init(rawValue: 77_738_308), error: nil))
@@ -93,7 +93,7 @@ extension HyperliquidKitTests {
         @Test func `a rejected TWAP returns Hyperliquid's reason`() async throws {
             let rejected = #"{"status":"ok","response":{"type":"twapOrder","data":{"status":{"error":"Invalid TWAP duration: 1 min(s)"}}}}"#
             let transport = Self.transport(Self.meta, rejected)
-            let result = try await TwapRequests.test(transport).place(.init(.buy, "BTC", size: 1, duration: .seconds(60)))
+            let result = try await TwapEndpoints.test(transport).place(.init(.buy, "BTC", size: 1, duration: .seconds(60)))
             #expect(result == .init(twapID: nil, error: "Invalid TWAP duration: 1 min(s)"))
         }
 
@@ -101,7 +101,7 @@ extension HyperliquidKitTests {
         func `a TWAP duration that isn't whole minutes throws before anything is sent`(duration: Duration) async {
             let transport = FakeTransport()
             await #expect {
-                _ = try await TwapRequests.test(transport).place(.init(.buy, "BTC", size: 1, duration: duration))
+                _ = try await TwapEndpoints.test(transport).place(.init(.buy, "BTC", size: 1, duration: duration))
             } throws: { error in
                 (error as? Hyperliquid.ClientError)?.reason == .invalidRequest
             }
@@ -112,7 +112,7 @@ extension HyperliquidKitTests {
             let success = #"{"status":"ok","response":{"type":"twapCancel","data":{"status":"success"}}}"#
             let failure = #"{"status":"ok","response":{"type":"twapCancel","data":{"status":{"error":"TWAP was never placed, already canceled, or filled."}}}}"#
             let transport = Self.transport(Self.meta, success, failure)
-            let twap = TwapRequests.test(transport)
+            let twap = TwapEndpoints.test(transport)
             #expect(try await twap.cancel(.init(rawValue: 3156), coin: "ETH").isCanceled)
             #expect(try await twap.cancel(.init(rawValue: 3156), coin: "ETH").error == "TWAP was never placed, already canceled, or filled.")
             #expect(try await Self.action(transport) == #"{"type":"twapCancel","a":1,"t":3156}"#)
@@ -122,7 +122,7 @@ extension HyperliquidKitTests {
         func `a TWAP answer without a status throws an unexpected response with the nonce`(answer: String) async {
             let transport = Self.transport(Self.meta, answer)
             await #expect {
-                _ = try await TwapRequests.test(transport, nonce: 42).place(.init(.buy, "BTC", size: 1, duration: .seconds(300)))
+                _ = try await TwapEndpoints.test(transport, nonce: 42).place(.init(.buy, "BTC", size: 1, duration: .seconds(300)))
             } throws: { error in
                 let error = error as? HyperliquidError
                 return error?.kind == .unexpectedResponse && error?.nonce == 42
@@ -132,7 +132,7 @@ extension HyperliquidKitTests {
         @Test func `an accepted answer with no response at all says it has no status`() async {
             let transport = Self.transport(Self.meta, #"{"status":"ok"}"#)
             await #expect {
-                _ = try await TwapRequests.test(transport).cancel(.init(rawValue: 1), coin: "BTC")
+                _ = try await TwapEndpoints.test(transport).cancel(.init(rawValue: 1), coin: "BTC")
             } throws: { error in
                 (error as? HyperliquidError)?.message == "The answer has no status"
             }
@@ -142,7 +142,7 @@ extension HyperliquidKitTests {
 
         /// Every action this suite covers, on `coin`.
         private static func actions(
-            _ position: PositionRequests, _ twap: TwapRequests, _ coin: Hyperliquid.Coin, expiresAfter: Date? = nil
+            _ position: PositionEndpoints, _ twap: TwapEndpoints, _ coin: Hyperliquid.Coin, expiresAfter: Date? = nil
         ) -> [@Sendable () async throws -> Void] {
             [
                 { try await position.setLeverage(.cross(5), for: coin, expiresAfter: expiresAfter) },
@@ -198,7 +198,7 @@ extension HyperliquidKitTests {
         }
 
         /// Inputs that can't be sent, each on one action.
-        private static let invalidInputs: [@Sendable (PositionRequests, TwapRequests) async throws -> Void] = [
+        private static let invalidInputs: [@Sendable (PositionEndpoints, TwapEndpoints) async throws -> Void] = [
             { position, _ in try await position.adjustMargin("BTC", by: .nan) },
             { position, _ in try await position.adjustMargin("BTC", by: 10_000_000_000_000) },
             { position, _ in try await position.adjustMargin("BTC", by: Decimal(string: "1.000000001")!) },

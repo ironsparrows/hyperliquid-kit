@@ -221,7 +221,7 @@ extension HyperliquidKitTests {
             (#"{"channel":"allMids","data":{"mids":{},"dex":"xyz"}}"#, "allMids", "xyz"),
         ])
         func `a push is routed by its channel and the field from its own data`(frame: String, channel: String, key: String) {
-            #expect(StreamConnection.topic(of: Data(frame.utf8)) == .init(channel: channel, key: key))
+            #expect(StreamRouter.topic(of: Data(frame.utf8)) == .init(channel: channel, key: key))
         }
 
         @Test(arguments: [
@@ -230,7 +230,7 @@ extension HyperliquidKitTests {
             #"{"channel":"allMids","data":"unreadable"}"#,
         ])
         func `frames no stream reads have no topic`(frame: String) {
-            #expect(StreamConnection.topic(of: Data(frame.utf8)) == nil)
+            #expect(StreamRouter.topic(of: Data(frame.utf8)) == nil)
         }
     }
 }

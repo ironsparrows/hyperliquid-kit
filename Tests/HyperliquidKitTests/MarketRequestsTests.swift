@@ -125,7 +125,7 @@ extension HyperliquidKitTests {
         }
 
         /// Every market read that takes one coin.
-        private static func coinReads(_ market: MarketRequests, _ coin: Hyperliquid.Coin)
+        private static func coinReads(_ market: MarketEndpoints, _ coin: Hyperliquid.Coin)
             -> [@Sendable () async throws -> Void]
         {
             [
@@ -237,8 +237,8 @@ extension HyperliquidKitTests {
             #expect(await transport.bodies == [#"{"type":"exchangeStatus"}"#])
         }
 
-        private static func market(_ transport: FakeTransport) -> MarketRequests {
-            MarketRequests(info: .test(transport), directory: AssetDirectory(info: .test(transport)))
+        private static func market(_ transport: FakeTransport) -> MarketEndpoints {
+            MarketEndpoints(info: .test(transport), directory: AssetDirectory(info: .test(transport)))
         }
     }
 }

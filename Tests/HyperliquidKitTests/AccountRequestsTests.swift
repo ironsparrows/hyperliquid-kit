@@ -30,8 +30,8 @@ extension HyperliquidKitTests {
 
         @Test func `a read without an address on a client without an account throws missing account unsent`() async {
             let transport = FakeTransport()
-            let account = AccountRequests(info: .test(transport), account: nil)
-            let position = PositionRequests.test(transport)
+            let account = AccountEndpoints(info: .test(transport), account: nil)
+            let position = PositionEndpoints.test(transport)
             await #expect {
                 _ = try await account.balances()
             } throws: { error in
@@ -146,12 +146,12 @@ extension HyperliquidKitTests {
             #expect(await transport.requests.isEmpty)
         }
 
-        private static func account(_ transport: FakeTransport) -> AccountRequests {
-            AccountRequests(info: .test(transport), account: Self.account)
+        private static func account(_ transport: FakeTransport) -> AccountEndpoints {
+            AccountEndpoints(info: .test(transport), account: Self.account)
         }
 
-        private static func position(_ transport: FakeTransport) -> PositionRequests {
-            PositionRequests.test(transport, account: Self.account)
+        private static func position(_ transport: FakeTransport) -> PositionEndpoints {
+            PositionEndpoints.test(transport, account: Self.account)
         }
     }
 }

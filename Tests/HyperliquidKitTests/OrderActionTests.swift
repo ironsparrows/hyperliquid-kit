@@ -24,7 +24,7 @@ extension HyperliquidKitTests {
         // carry its published signatures.
         @Test func `a limit order is sent exactly as the Python SDK signs it`() async throws {
             let transport = Self.transport(Self.meta, Self.resting)
-            let results = try await OrderRequests.test(transport).place([
+            let results = try await OrderEndpoints.test(transport).place([
                 .limit(.buy, "ETH", price: 100, size: 100),
             ])
             #expect(results == [.init(status: .resting, orderID: .init(rawValue: 77_738_308))])
@@ -37,7 +37,7 @@ extension HyperliquidKitTests {
         @Test func `an order with a client order ID signs as the Python SDK's vector`() async throws {
             let transport = Self.transport(Self.meta, Self.resting)
             let clientID = try Hyperliquid.ClientOrderID("0x00000000000000000000000000000001")
-            _ = try await OrderRequests.test(transport).place([.limit(.buy, "ETH", price: 100, size: 100, clientID: clientID)])
+            _ = try await OrderEndpoints.test(transport).place([.limit(.buy, "ETH", price: 100, size: 100, clientID: clientID)])
             let body = try await Self.exchangeBody(transport)
             #expect(body.contains(#""c":"0x00000000000000000000000000000001"}],"#))
             #expect(body.contains(#""r":"0x41ae18e8239a56cacbc5dad94d45d0b747e5da11ad564077fcac71277a946e3""#))
@@ -45,7 +45,7 @@ extension HyperliquidKitTests {
 
         @Test func `a stop-loss trigger order signs as the Python SDK's vector`() async throws {
             let transport = Self.transport(Self.meta, Self.resting)
-            _ = try await OrderRequests.test(transport).place([
+            _ = try await OrderEndpoints.test(transport).place([
                 .trigger(.buy, "ETH", .stopLoss, triggerPrice: 103, size: 100, execution: .market(limitPrice: 100), reduceOnly: false),
             ])
             let body = try await Self.exchangeBody(transport)
@@ -55,7 +55,7 @@ extension HyperliquidKitTests {
 
         @Test func `scheduling and clearing a cancel sign as the Python SDK's vectors`() async throws {
             let transport = Self.transport(Self.accepted, Self.accepted)
-            let order = OrderRequests.test(transport, nonce: 0)
+            let order = OrderEndpoints.test(transport, nonce: 0)
             try await order.scheduleCancelAll(at: Date(timeIntervalSince1970: 123_456.789))
             try await order.clearScheduledCancel()
             let bodies = await transport.bodies
@@ -68,7 +68,7 @@ extension HyperliquidKitTests {
         @Test(arguments: [false, true])
         func `a cancel sends the fast flag only when set`(fast: Bool) async throws {
             let transport = Self.transport(Self.meta, #"{"status":"ok","response":{"type":"cancel","data":{"statuses":["success",{"error":"Order was never placed, already canceled, or filled."}]}}}"#)
-            let results = try await OrderRequests.test(transport).cancel(
+            let results = try await OrderEndpoints.test(transport).cancel(
                 [.init(.init(rawValue: 1), coin: "BTC"), .init(.init(rawValue: 2), coin: "ETH")], fast: fast
             )
             #expect(results.map(\.isCanceled) == [true, false])
@@ -79,7 +79,7 @@ extension HyperliquidKitTests {
         @Test func `a cancel by client order ID names the asset and the ID`() async throws {
             let transport = Self.transport(Self.meta, #"{"status":"ok","response":{"type":"cancel","data":{"statuses":["success"]}}}"#)
             let clientID = try Hyperliquid.ClientOrderID("0x0000000000000000000000000000000a")
-            _ = try await OrderRequests.test(transport).cancel(clientIDs: [.init(clientID, coin: "ETH")])
+            _ = try await OrderEndpoints.test(transport).cancel(clientIDs: [.init(clientID, coin: "ETH")])
             #expect(
                 try await Self.exchangeBody(transport).hasPrefix(
                     #"{"action":{"type":"cancelByCloid","cancels":[{"asset":1,"cloid":"0x0000000000000000000000000000000a"}]},"#
@@ -92,7 +92,7 @@ extension HyperliquidKitTests {
             let transport = Self.transport(Self.meta, #"{"status":"ok","response":{"type":"order","data":{"statuses":[{"resting":{"oid":5}},{"resting":{"oid":6}}]}}}"#)
             let clientID = try Hyperliquid.ClientOrderID("0x0000000000000000000000000000000a")
             let new = Hyperliquid.OrderRequest.limit(.sell, "BTC", price: Decimal(string: "60000.5")!, size: Decimal(string: "0.0010")!, timeInForce: .addLiquidityOnly)
-            _ = try await OrderRequests.test(transport).modify(
+            _ = try await OrderEndpoints.test(transport).modify(
                 [.init(.id(.init(rawValue: 9)), to: new), .init(.clientID(clientID), to: new)], alwaysPlace: alwaysPlace
             )
             let order = #"{"a":0,"b":false,"p":"60000.5","s":"0.001","r":false,"t":{"limit":{"tif":"Alo"}}}"#
@@ -112,7 +112,7 @@ extension HyperliquidKitTests {
         ) async {
             let transport = Self.transport(Self.meta)
             await #expect {
-                try await OrderRequests.test(transport).place([order])
+                try await OrderEndpoints.test(transport).place([order])
             } throws: { error in
                 guard let error = error as? Hyperliquid.ClientError else { return false }
                 return error.reason == .invalidRequest && error.message?.hasPrefix("The \(field) ") == true
@@ -124,7 +124,7 @@ extension HyperliquidKitTests {
             let transport = Self.transport(Self.meta)
             let new = Hyperliquid.OrderRequest.limit(.buy, "BTC", price: 1, size: Decimal(string: "0.000000001")!)
             await #expect {
-                try await OrderRequests.test(transport).modify([.init(.id(.init(rawValue: 1)), to: new)])
+                try await OrderEndpoints.test(transport).modify([.init(.id(.init(rawValue: 1)), to: new)])
             } throws: { error in
                 (error as? Hyperliquid.ClientError)?.reason == .invalidRequest
             }
@@ -140,7 +140,7 @@ extension HyperliquidKitTests {
                 default: [Self.accepted]
                 }
             let transport = FakeTransport(responses: answers.map { TransportResponse(status: 200, body: Data($0.utf8)) })
-            let order = OrderRequests.test(transport)
+            let order = OrderEndpoints.test(transport)
             let expiry = Date(timeIntervalSince1970: 1_700_000_000)
             let limit = Hyperliquid.OrderRequest.limit(.buy, "BTC", price: 1, size: 1)
             switch action {
@@ -157,7 +157,7 @@ extension HyperliquidKitTests {
 
         @Test func `8 decimals are sent as written`() async throws {
             let transport = Self.transport(Self.meta, Self.resting)
-            _ = try await OrderRequests.test(transport).place([.limit(.buy, "BTC", price: 1, size: Decimal(string: "0.12345678")!)])
+            _ = try await OrderEndpoints.test(transport).place([.limit(.buy, "BTC", price: 1, size: Decimal(string: "0.12345678")!)])
             #expect(try await Self.exchangeBody(transport).contains(#""s":"0.12345678""#))
         }
 
@@ -165,7 +165,7 @@ extension HyperliquidKitTests {
         func `a floating-point literal is sent as written`(size: Decimal, expected: String) async throws {
             let transport = Self.transport(Self.meta, Self.resting)
             // A `Decimal` made from a `Double` carries its binary error, such as 60000.0999999999985…
-            _ = try await OrderRequests.test(transport).place([.limit(.buy, "BTC", price: 1, size: size)])
+            _ = try await OrderEndpoints.test(transport).place([.limit(.buy, "BTC", price: 1, size: size)])
             #expect(try await Self.exchangeBody(transport).contains(#""s":"\#(expected)""#))
         }
 
@@ -173,14 +173,14 @@ extension HyperliquidKitTests {
             let order = Hyperliquid.OrderRequest.limit(.buy, "BTC", price: 1, size: 1)
             let rejected = Self.transport(Self.meta, #"{"status":"ok","response":{"type":"order","data":{"statuses":[{"error":"Order has invalid size."}]}}}"#)
             await #expect {
-                try await OrderRequests.test(rejected).place([order, order])
+                try await OrderEndpoints.test(rejected).place([order, order])
             } throws: { error in
                 guard let error = error as? HyperliquidError else { return false }
                 return error.kind == .actionRejected && error.message == "Order has invalid size."
             }
             let missing = Self.transport(Self.meta, #"{"status":"ok","response":{"type":"order","data":{"statuses":[{"resting":{"oid":1}}]}}}"#)
             await #expect {
-                try await OrderRequests.test(missing).place([order, order])
+                try await OrderEndpoints.test(missing).place([order, order])
             } throws: { error in
                 guard let error = error as? HyperliquidError else { return false }
                 return error.kind == .unexpectedResponse && error.message == "1 statuses for 2 orders" && error.nonce != nil
@@ -189,7 +189,7 @@ extension HyperliquidKitTests {
 
         @Test func `a nonce spent by invalidating is never handed out again`() async throws {
             let transport = Self.transport(Self.accepted, Self.meta, Self.resting)
-            let order = OrderRequests.test(transport, nonce: 1_000)
+            let order = OrderEndpoints.test(transport, nonce: 1_000)
             try await order.invalidate(nonce: 5_000)
             _ = try await order.place([.limit(.buy, "BTC", price: 1, size: 1)])
             #expect(try await Self.exchangeBody(transport).contains(#""nonce":5001,"#))
@@ -197,14 +197,14 @@ extension HyperliquidKitTests {
 
         @Test func `invalidating a nonce signs a no-op with that nonce`() async throws {
             let transport = Self.transport(Self.accepted)
-            try await OrderRequests.test(transport, nonce: 5).invalidate(nonce: 1_700_000_000_123)
+            try await OrderEndpoints.test(transport, nonce: 5).invalidate(nonce: 1_700_000_000_123)
             #expect(try await Self.exchangeBody(transport).hasPrefix(#"{"action":{"type":"noop"},"nonce":1700000000123,"#))
         }
 
         @Test func `the vault and expiry are sent with the action`() async throws {
             let transport = Self.transport(Self.accepted)
             let vault: Hyperliquid.Address = "0x1719884eb866cb12b2287399b15f7db5e7d775ea"
-            try await OrderRequests.test(transport, vault: vault)
+            try await OrderEndpoints.test(transport, vault: vault)
                 .clearScheduledCancel(expiresAfter: Date(timeIntervalSince1970: 1_700_000_000))
             #expect(
                 try await Self.exchangeBody(transport)
@@ -217,7 +217,7 @@ extension HyperliquidKitTests {
                 #"[null,{"name":"xyz","fullName":"XYZ","deployer":"0x88806a71d74ad0a510b350545c9ae490912f0888"}]"#,
                 #"{"universe":[{"name":"xyz:XYZ100","szDecimals":4}]}"#, Self.resting
             )
-            _ = try await OrderRequests.test(transport).place([.limit(.buy, "xyz:XYZ100", price: 25_000, size: 1)])
+            _ = try await OrderEndpoints.test(transport).place([.limit(.buy, "xyz:XYZ100", price: 25_000, size: 1)])
             #expect(try await Self.exchangeBody(transport).contains(#""orders":[{"a":110000,"#))
         }
 
@@ -225,7 +225,7 @@ extension HyperliquidKitTests {
             let statuses = #"[{"resting":{"oid":1,"cloid":"0x0000000000000000000000000000000a"}},{"filled":{"totalSz":"0.02","avgPx":"1891.4","oid":2}},{"error":"Order must have minimum value of $10."},"waitingForTrigger"]"#
             let transport = Self.transport(Self.meta, #"{"status":"ok","response":{"type":"order","data":{"statuses":"# + statuses + "}}}")
             let order = Hyperliquid.OrderRequest.limit(.buy, "BTC", price: 1, size: 1)
-            let results = try await OrderRequests.test(transport).place(Array(repeating: order, count: 4))
+            let results = try await OrderEndpoints.test(transport).place(Array(repeating: order, count: 4))
             #expect(results.map(\.status) == [.resting, .filled, .rejected, .init(rawValue: "waitingForTrigger")])
             #expect(results[0].clientID == (try Hyperliquid.ClientOrderID("0x0000000000000000000000000000000a")))
             #expect(results[1].filledSize == Decimal(string: "0.02") && results[1].averagePrice == Decimal(string: "1891.4"))
@@ -236,7 +236,7 @@ extension HyperliquidKitTests {
             let transport = Self.transport(Self.meta, #"{"status":"ok","response":{"type":"order","data":{"statuses":[{"error":"Invalid TP/SL price."}]}}}"#)
             let order = Hyperliquid.OrderRequest.limit(.buy, "BTC", price: 1, size: 1)
             await #expect {
-                try await OrderRequests.test(transport, nonce: 42).place([order, order])
+                try await OrderEndpoints.test(transport, nonce: 42).place([order, order])
             } throws: { error in
                 (error as? HyperliquidError)?.kind == .actionRejected && (error as? HyperliquidError)?.nonce == 42
             }
@@ -245,7 +245,7 @@ extension HyperliquidKitTests {
         @Test func `a rejected action throws Hyperliquid's message with the nonce`() async {
             let transport = Self.transport(#"{"status":"err","response":"User or API Wallet 0x00000000000000000000000000000000000000c4 does not exist."}"#)
             await #expect {
-                try await OrderRequests.test(transport, nonce: 42).clearScheduledCancel()
+                try await OrderEndpoints.test(transport, nonce: 42).clearScheduledCancel()
             } throws: { error in
                 guard let error = error as? HyperliquidError else { return false }
                 return error.kind == .actionRejected && error.nonce == 42 && error.message?.hasPrefix("User or API Wallet") == true
@@ -255,7 +255,7 @@ extension HyperliquidKitTests {
         @Test func `an HTTP error throws its status and message with the nonce`() async {
             let transport = FakeTransport(status: 422, json: "Failed to deserialize the JSON body into the target type")
             await #expect {
-                try await OrderRequests.test(transport, nonce: 42).clearScheduledCancel()
+                try await OrderEndpoints.test(transport, nonce: 42).clearScheduledCancel()
             } throws: { error in
                 guard let error = error as? HyperliquidError else { return false }
                 return error.httpStatus == 422 && error.nonce == 42
@@ -265,7 +265,7 @@ extension HyperliquidKitTests {
 
         @Test func `a network failure during an action carries the nonce`() async {
             await #expect {
-                try await OrderRequests.test(FailingTransport(), nonce: 42).invalidate(nonce: 7)
+                try await OrderEndpoints.test(FailingTransport(), nonce: 42).invalidate(nonce: 7)
             } throws: { error in
                 guard let error = error as? Hyperliquid.ClientError else { return false }
                 return error.reason == .timedOut && error.nonce == 7
@@ -274,7 +274,7 @@ extension HyperliquidKitTests {
 
         @Test func `an action without a signer throws before anything is sent`() async {
             let transport = FakeTransport()
-            let order = OrderRequests.test(transport, signer: nil)
+            let order = OrderEndpoints.test(transport, signer: nil)
             let actions: [@Sendable () async throws -> Void] = [
                 { _ = try await order.place([.limit(.buy, "BTC", price: 1, size: 1)]) },
                 { _ = try await order.cancel([.init(.init(rawValue: 1), coin: "BTC")]) },
@@ -293,7 +293,7 @@ extension HyperliquidKitTests {
 
         @Test func `a network failure carries the nonce the counter gave the action`() async {
             await #expect {
-                try await OrderRequests.test(FailingTransport(), nonce: 42).clearScheduledCancel()
+                try await OrderEndpoints.test(FailingTransport(), nonce: 42).clearScheduledCancel()
             } throws: { error in
                 (error as? Hyperliquid.ClientError)?.nonce == 42
             }
@@ -303,7 +303,7 @@ extension HyperliquidKitTests {
         func `an answer the client can't read throws an unexpected response with the nonce`(body: String) async {
             let transport = FakeTransport(json: body)
             await #expect {
-                try await OrderRequests.test(transport, nonce: 42).clearScheduledCancel()
+                try await OrderEndpoints.test(transport, nonce: 42).clearScheduledCancel()
             } throws: { error in
                 guard let error = error as? HyperliquidError else { return false }
                 return error.kind == .unexpectedResponse && error.nonce == 42 && error.body == Data(body.utf8)
@@ -312,14 +312,14 @@ extension HyperliquidKitTests {
 
         @Test func `a cancel status other than success is a failure with that text`() async throws {
             let transport = Self.transport(Self.meta, #"{"status":"ok","response":{"type":"cancel","data":{"statuses":["somethingNew"]}}}"#)
-            let results = try await OrderRequests.test(transport).cancel([.init(.init(rawValue: 1), coin: "BTC")])
+            let results = try await OrderEndpoints.test(transport).cancel([.init(.init(rawValue: 1), coin: "BTC")])
             #expect(results == [.init(error: "somethingNew")])
         }
 
         @Test func `an order on a spot coin throws before anything is sent`() async {
             let transport = FakeTransport()
             await #expect {
-                try await OrderRequests.test(transport).place([.limit(.buy, "@107", price: 1, size: 1)])
+                try await OrderEndpoints.test(transport).place([.limit(.buy, "@107", price: 1, size: 1)])
             } throws: { error in
                 (error as? Hyperliquid.ClientError)?.reason == .unsupportedMarket
             }

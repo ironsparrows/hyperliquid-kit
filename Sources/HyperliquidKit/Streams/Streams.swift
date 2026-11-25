@@ -1,135 +1,141 @@
 import Foundation
 import HyperliquidKitCore
 
-/// Live pushes over the client's ``StreamConnection``: market streams here, compressed market feeds
-/// in `MarketFeeds.swift`, account streams in `AccountStreams.swift`.
+/// Live pushes over the client's ``StreamConnection``: the market streams in ``MarketStreams``, the
+/// account streams in ``AccountStreams``.
 struct Streams: Hyperliquid.StreamAPI {
     let connection: StreamConnection
-    /// The account that account streams given no user stream.
-    let account: Hyperliquid.Address?
+    let market: MarketStreams
+    let account: AccountStreams
 
+    /// - Parameter account: The account that account streams given no user stream.
     init(connection: StreamConnection, account: Hyperliquid.Address? = nil) {
         self.connection = connection
-        self.account = account
+        market = MarketStreams(connection: connection)
+        self.account = AccountStreams(connection: connection, account: account)
     }
 
+    // MARK: Markets
+
     func mids(dex: Hyperliquid.PerpDex) -> AsyncThrowingStream<[Hyperliquid.Coin: Decimal], any Error> {
-        connection.stream(.allMids(dex), buffering: .latest) { data in
-            try Self.payload(MidsPush.self, of: data).mids.mapValues(\.value)
-        }
+        market.mids(dex: dex)
     }
 
     func orderBook(_ coin: Hyperliquid.Coin, precision: Hyperliquid.OrderBook.Precision)
         -> AsyncThrowingStream<Hyperliquid.OrderBook, any Error>
     {
-        connection.stream(.l2Book(coin, precision: precision), buffering: .latest) { data in
-            try Self.payload(Hyperliquid.OrderBook.self, of: data)
-        }
+        market.orderBook(coin, precision: precision)
     }
 
     func bestBidOffer(_ coin: Hyperliquid.Coin) -> AsyncThrowingStream<Hyperliquid.BestBidOffer, any Error> {
-        connection.stream(.coin("bbo", coin), buffering: .latest) { data in
-            try Self.payload(Hyperliquid.BestBidOffer.self, of: data)
-        }
+        market.bestBidOffer(coin)
     }
 
     func trades(_ coin: Hyperliquid.Coin) -> AsyncThrowingStream<[Hyperliquid.Trade], any Error> {
-        connection.stream(.coin("trades", coin), buffering: .all) { data in
-            try Self.payload([Hyperliquid.Trade].self, of: data)
-        }
+        market.trades(coin)
     }
 
     func candles(_ coin: Hyperliquid.Coin, interval: Hyperliquid.Candle.Interval)
         -> AsyncThrowingStream<Hyperliquid.Candle, any Error>
     {
-        connection.stream(.candle(coin, interval: interval), buffering: .all, decodeEach: { data in
-            try Self.payload(CandlePush.self, of: data).candles
-        })
+        market.candles(coin, interval: interval)
     }
 
     func assetContext(_ coin: Hyperliquid.Coin) -> AsyncThrowingStream<Hyperliquid.AssetContext, any Error> {
-        connection.stream(.coin("activeAssetCtx", coin), buffering: .latest) { data in
-            try Self.payload(AssetContextPush.self, of: data).ctx
-        }
+        market.assetContext(coin)
     }
+
+    // MARK: Compressed feeds
+
+    func orderBookUpdates(_ coin: Hyperliquid.Coin, precision: Hyperliquid.OrderBook.Precision)
+        -> AsyncThrowingStream<Hyperliquid.OrderBook, any Error>
+    {
+        market.orderBookUpdates(coin, precision: precision)
+    }
+
+    func prices() -> AsyncThrowingStream<[Hyperliquid.Coin: Hyperliquid.MarketPrices], any Error> {
+        market.prices()
+    }
+
+    func assetContexts() -> AsyncThrowingStream<[Hyperliquid.Coin: Hyperliquid.AssetContext], any Error> {
+        market.assetContexts()
+    }
+
+    // MARK: Account
+
+    func orderUpdates(for user: Hyperliquid.Address?) -> AsyncThrowingStream<Hyperliquid.HistoricalOrder, any Error> {
+        account.orderUpdates(for: user)
+    }
+
+    func fills(aggregateByTime: Bool, for user: Hyperliquid.Address?)
+        -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.Fill>, any Error>
+    {
+        account.fills(aggregateByTime: aggregateByTime, for: user)
+    }
+
+    func events(for user: Hyperliquid.Address?) -> AsyncThrowingStream<Hyperliquid.UserEvent, any Error> {
+        account.events(for: user)
+    }
+
+    func fundingPayments(for user: Hyperliquid.Address?)
+        -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.FundingPayment>, any Error>
+    {
+        account.fundingPayments(for: user)
+    }
+
+    func ledger(for user: Hyperliquid.Address?)
+        -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.LedgerUpdate>, any Error>
+    {
+        account.ledger(for: user)
+    }
+
+    func perpetualState(dex: Hyperliquid.PerpDex, for user: Hyperliquid.Address?)
+        -> AsyncThrowingStream<Hyperliquid.PerpetualState, any Error>
+    {
+        account.perpetualState(dex: dex, for: user)
+    }
+
+    func pendingOrders(dex: Hyperliquid.PerpDex, for user: Hyperliquid.Address?)
+        -> AsyncThrowingStream<[Hyperliquid.Order], any Error>
+    {
+        account.pendingOrders(dex: dex, for: user)
+    }
+
+    func tradingLimits(_ coin: Hyperliquid.Coin, for user: Hyperliquid.Address?)
+        -> AsyncThrowingStream<Hyperliquid.TradingLimits, any Error>
+    {
+        account.tradingLimits(coin, for: user)
+    }
+
+    func balances(for user: Hyperliquid.Address?) -> AsyncThrowingStream<[Hyperliquid.Balance], any Error> {
+        account.balances(for: user)
+    }
+
+    func notifications(for user: Hyperliquid.Address?) -> AsyncThrowingStream<String, any Error> {
+        account.notifications(for: user)
+    }
+
+    func twapStates(dex: Hyperliquid.PerpDex, for user: Hyperliquid.Address?)
+        -> AsyncThrowingStream<[Hyperliquid.TwapID: Hyperliquid.Twap], any Error>
+    {
+        account.twapStates(dex: dex, for: user)
+    }
+
+    func twapSliceFills(for user: Hyperliquid.Address?)
+        -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.TwapSliceFill>, any Error>
+    {
+        account.twapSliceFills(for: user)
+    }
+
+    func twapHistory(for user: Hyperliquid.Address?)
+        -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.TwapHistoryEntry>, any Error>
+    {
+        account.twapHistory(for: user)
+    }
+
+    // MARK: Connection
 
     func disconnect() async {
         await connection.disconnect()
     }
-
-    /// The `data` of a push `{"channel": …, "data": …}`.
-    static func payload<Payload: Decodable>(_ type: Payload.Type, of data: Data) throws -> Payload {
-        try JSONDecoder().decode(Push<Payload>.self, from: data).data
-    }
-}
-
-// MARK: - Subscriptions
-
-extension StreamConnection.Subscription {
-    /// `allMids`, with `dex` for a builder-deployed perp DEX, which is checked first; a push from the
-    /// first perp DEX carries no `dex`.
-    static func allMids(_ dex: Hyperliquid.PerpDex) -> Self {
-        Self(
-            topic: .init(channel: "allMids", key: dex.name),
-            request: dex == .first ? ["type": "allMids"] : ["type": "allMids", "dex": .string(dex.name)],
-            dex: dex
-        )
-    }
-
-    /// `l2Book` for a coin, with `nSigFigs` and `mantissa` when the precision sets them.
-    static func l2Book(_ coin: Hyperliquid.Coin, precision: Hyperliquid.OrderBook.Precision) -> Self {
-        Self(
-            topic: .init(channel: "l2Book", key: coin.name),
-            request: .map([.init(key: "type", value: "l2Book"), .init(key: "coin", value: .string(coin.name))]
-                + precision.wireParameters),
-            coin: coin
-        )
-    }
-
-    /// `{type, coin}` for a channel that takes only a coin: `bbo`, `trades`, `activeAssetCtx`.
-    static func coin(_ type: String, _ coin: Hyperliquid.Coin) -> Self {
-        Self(
-            topic: .init(channel: type, key: coin.name), request: ["type": .string(type), "coin": .string(coin.name)],
-            coin: coin
-        )
-    }
-
-    /// `candle` for a coin and interval; pushes are routed by both.
-    static func candle(_ coin: Hyperliquid.Coin, interval: Hyperliquid.Candle.Interval) -> Self {
-        Self(
-            topic: .init(channel: "candle", key: "\(coin.name),\(interval.rawValue)"),
-            request: ["type": "candle", "coin": .string(coin.name), "interval": .string(interval.rawValue)],
-            coin: coin
-        )
-    }
-}
-
-// MARK: - Wire
-
-/// `{"channel": …, "data": …}`.
-private struct Push<Payload: Decodable>: Decodable {
-    let data: Payload
-}
-
-/// `allMids` data: `{"mids": {coin: "price"}, "dex"?}`.
-private struct MidsPush: Decodable {
-    let mids: [Hyperliquid.Coin: WireDecimal]
-}
-
-/// `candle` data: one candle, as Hyperliquid sends it, or a list, as its subscriptions page types it.
-private struct CandlePush: Decodable {
-    let candles: [Hyperliquid.Candle]
-
-    init(from decoder: any Decoder) throws {
-        if (try? decoder.unkeyedContainer()) != nil {
-            candles = try decoder.singleValueContainer().decode([Hyperliquid.Candle].self)
-        } else {
-            candles = [try Hyperliquid.Candle(from: decoder)]
-        }
-    }
-}
-
-/// `activeAssetCtx` data: `{"coin": …, "ctx": …}`.
-private struct AssetContextPush: Decodable {
-    let ctx: Hyperliquid.AssetContext
 }

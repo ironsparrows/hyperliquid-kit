@@ -3,7 +3,15 @@ import HyperliquidKitCore
 
 /// How a push finds its streams: its channel and the field that tells its subscriptions apart, read
 /// from the push alone.
-extension StreamConnection {
+enum StreamRouter {
+    /// Where a push goes: the streams of one topic, or of every topic on a channel.
+    enum Destination: Hashable, Sendable {
+        case topic(StreamConnection.Topic)
+        /// For a push whose topic can't be read, such as an order book diff that doesn't inflate,
+        /// which every stream that could be missing it must hear about.
+        case channel(String)
+    }
+
     /// Where the frame goes and the push its streams read, worked out off the connection's actor, or
     /// `nil` for a frame no stream reads.
     @concurrent
@@ -13,7 +21,7 @@ extension StreamConnection {
 
     /// The topic of a push, from the push alone, or `nil` for a frame no stream reads or one bound for
     /// every topic of its channel.
-    static func topic(of frame: Data) -> Topic? {
+    static func topic(of frame: Data) -> StreamConnection.Topic? {
         guard case .topic(let topic) = routed(frame)?.destination else { return nil }
         return topic
     }
@@ -33,7 +41,7 @@ extension StreamConnection {
         guard let push = try? JSONDecoder().decode(RoutingPush.self, from: frame) else { return nil }
         switch push.channel {
         case "fastAssetCtxs", "pac":
-            return (.topic(Topic(channel: push.channel, key: "")), frame)
+            return (.topic(StreamConnection.Topic(channel: push.channel, key: "")), frame)
         case "l2":
             return push.bookUpdate.flatMap { routedBookUpdate($0, frame: frame) }
         default:
@@ -46,7 +54,7 @@ extension StreamConnection {
         -> (destination: Destination, push: Data)?
     {
         if let coin = update.snapshotCoin ?? update.diffCoin {
-            return (.topic(Topic(channel: "l2", key: coin)), frame)
+            return (.topic(StreamConnection.Topic(channel: "l2", key: coin)), frame)
         }
         // A push of another shape is dropped, as frames that route nowhere are.
         guard let text = update.compressed else { return nil }
@@ -54,32 +62,32 @@ extension StreamConnection {
             let diff = try? JSONDecoder().decode(RoutingPush.DiffCoin.self, from: json)
         else { return (.channel("l2"), frame) }
         let push = Data(#"{"data":{"u":"#.utf8) + json + Data("}}".utf8)
-        return (.topic(Topic(channel: "l2", key: diff.c)), push)
+        return (.topic(StreamConnection.Topic(channel: "l2", key: diff.c)), push)
     }
 
     /// The topic of a push on a channel routed by plain fields of its data.
-    private static func topic(channel: String, fields: RoutingPush.Fields) -> Topic? {
+    private static func topic(channel: String, fields: RoutingPush.Fields) -> StreamConnection.Topic? {
         let user = fields.user?.lowercased()
         switch channel {
         case "allMids":
             // A push from the first perp DEX carries no `dex`.
-            return Topic(channel: channel, key: fields.dex ?? "")
+            return StreamConnection.Topic(channel: channel, key: fields.dex ?? "")
         case "l2Book", "bbo", "trades", "activeAssetCtx":
-            return fields.coin.map { Topic(channel: channel, key: $0) }
+            return fields.coin.map { StreamConnection.Topic(channel: channel, key: $0) }
         case "candle":
             guard let coin = fields.s, let interval = fields.i else { return nil }
-            return Topic(channel: channel, key: "\(coin),\(interval)")
+            return StreamConnection.Topic(channel: channel, key: "\(coin),\(interval)")
         case "orderUpdates", "user", "notification":
-            return Topic(channel: channel, key: "")
+            return StreamConnection.Topic(channel: channel, key: "")
         case "userFills", "userFundings", "userNonFundingLedgerUpdates", "userTwapSliceFills", "userTwapHistory",
             "spotState":
-            return user.map { Topic(channel: channel, key: $0) }
+            return user.map { StreamConnection.Topic(channel: channel, key: $0) }
         case "clearinghouseState", "openOrders", "twapStates":
             guard let user, let dex = fields.dex else { return nil }
-            return Topic(channel: channel, key: "\(user),\(dex)")
+            return StreamConnection.Topic(channel: channel, key: "\(user),\(dex)")
         case "activeAssetData":
             guard let coin = fields.coin, let user else { return nil }
-            return Topic(channel: channel, key: "\(coin),\(user)")
+            return StreamConnection.Topic(channel: channel, key: "\(coin),\(user)")
         default:
             return nil
         }

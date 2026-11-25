@@ -72,7 +72,7 @@ extension HyperliquidKitTests {
             var rebuilt: [Date: Hyperliquid.OrderBook] = [:]
             var pushed: [Hyperliquid.OrderBook] = []
             for frame in try Fixture.frames("ws_l2") {
-                let topic = StreamConnection.topic(of: Data(frame.utf8))
+                let topic = StreamRouter.topic(of: Data(frame.utf8))
                 if topic == .init(channel: "l2Book", key: "BTC") {
                     pushed.append(try JSONDecoder().decode(Push.self, from: Data(frame.utf8)).data)
                     continue
@@ -102,7 +102,7 @@ extension HyperliquidKitTests {
             _ = try await session.sent(atLeast: 1)
             var last: Hyperliquid.OrderBook?
             for frame in try Fixture.frames("ws_l2") {
-                if StreamConnection.topic(of: Data(frame.utf8)) == .init(channel: "l2Book", key: "BTC") {
+                if StreamRouter.topic(of: Data(frame.utf8)) == .init(channel: "l2Book", key: "BTC") {
                     last = try JSONDecoder().decode(Push.self, from: Data(frame.utf8)).data
                 } else {
                     await session.push(frame)
@@ -299,7 +299,7 @@ extension HyperliquidKitTests {
 
         @Test func `a compressed diff is inflated while routing, and the whole-market feeds route by channel`() throws {
             let diff = try #require(try Fixture.frames("ws_l2").first { $0.contains(#""data":{"c":"#) })
-            let routedDiff = try #require(StreamConnection.routed(Data(diff.utf8)))
+            let routedDiff = try #require(StreamRouter.routed(Data(diff.utf8)))
             guard case .topic(let topic) = routedDiff.destination else {
                 Issue.record("Expected a topic, got \(routedDiff.destination)")
                 return
@@ -308,13 +308,13 @@ extension HyperliquidKitTests {
             #expect(String(decoding: routedDiff.push.prefix(13), as: UTF8.self) == #"{"data":{"u":"#)
             for (name, channel) in [("ws_pac", "pac"), ("ws_fastAssetCtxs", "fastAssetCtxs")] {
                 let frame = try #require(try Fixture.frames(name).first)
-                #expect(StreamConnection.topic(of: Data(frame.utf8)) == .init(channel: channel, key: ""))
+                #expect(StreamRouter.topic(of: Data(frame.utf8)) == .init(channel: channel, key: ""))
             }
         }
 
         @Test func `a compressed diff that doesn't inflate goes to every book update stream, another shape nowhere`() {
-            #expect(StreamConnection.routed(Data(#"{"channel":"l2","data":{"c":"AAAA"}}"#.utf8))?.destination == .channel("l2"))
-            #expect(StreamConnection.routed(Data(#"{"channel":"l2","data":{}}"#.utf8)) == nil)
+            #expect(StreamRouter.routed(Data(#"{"channel":"l2","data":{"c":"AAAA"}}"#.utf8))?.destination == .channel("l2"))
+            #expect(StreamRouter.routed(Data(#"{"channel":"l2","data":{}}"#.utf8)) == nil)
         }
 
         private struct Push: Decodable {

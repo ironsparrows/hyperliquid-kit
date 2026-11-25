@@ -27,7 +27,7 @@ extension HyperliquidKitTests {
 
         @Test func `a market buy is an immediate-or-cancel order at the mid plus 5 %, rounded`() async throws {
             let transport = Self.transport(Self.meta, Self.mids, Self.filled)
-            let results = try await OrderRequests.test(transport).place([.market(.buy, "BTC", size: Decimal(string: "0.5")!)])
+            let results = try await OrderEndpoints.test(transport).place([.market(.buy, "BTC", size: Decimal(string: "0.5")!)])
             #expect(results.first?.status == .filled)
             #expect(await transport.bodies[1] == #"{"type":"allMids","dex":""}"#)
             #expect(
@@ -38,7 +38,7 @@ extension HyperliquidKitTests {
 
         @Test func `an explicit price replaces the mid`() async throws {
             let transport = Self.transport(Self.meta, Self.filled)
-            _ = try await OrderRequests.test(transport).place([
+            _ = try await OrderEndpoints.test(transport).place([
                 .market(.sell, "ETH", size: 1, price: Decimal(string: "2014.35")!, slippage: .percent(5)),
             ])
             #expect(await transport.requests.count == 2)
@@ -51,7 +51,7 @@ extension HyperliquidKitTests {
         ) async {
             let transport = Self.transport(Self.meta)
             await #expect {
-                try await OrderRequests.test(transport).place([.market(.buy, "BTC", size: 1, slippage: slippage)])
+                try await OrderEndpoints.test(transport).place([.market(.buy, "BTC", size: 1, slippage: slippage)])
             } throws: { error in
                 (error as? Hyperliquid.ClientError)?.reason == .invalidRequest
             }
@@ -61,7 +61,7 @@ extension HyperliquidKitTests {
         @Test func `a coin without a mid price throws no mid price`() async {
             let transport = Self.transport(Self.meta, #"{"ETH":"2014.35"}"#)
             await #expect {
-                try await OrderRequests.test(transport).place([.market(.buy, "BTC", size: 1)])
+                try await OrderEndpoints.test(transport).place([.market(.buy, "BTC", size: 1)])
             } throws: { error in
                 (error as? Hyperliquid.ClientError)?.reason == .noMidPrice
             }
@@ -70,7 +70,7 @@ extension HyperliquidKitTests {
         @Test func `closing a short buys back its whole size with a reduce-only market order`() async throws {
             let transport = Self.transport(Self.meta, Self.state("-0.5"), Self.mids, Self.filled)
             let account: Hyperliquid.Address = "0x0000000000000000000000000000000000000001"
-            let results = try await OrderRequests.test(transport, account: account).close("BTC")
+            let results = try await OrderEndpoints.test(transport, account: account).close("BTC")
             #expect(results.first?.filledSize == Decimal(string: "0.5"))
             #expect(
                 await transport.bodies[1]
@@ -81,7 +81,7 @@ extension HyperliquidKitTests {
 
         @Test func `closing part of a long sells the given size`() async throws {
             let transport = Self.transport(Self.meta, Self.state("0.5"), Self.mids, Self.filled)
-            _ = try await OrderRequests.test(transport, account: "0x0000000000000000000000000000000000000001")
+            _ = try await OrderEndpoints.test(transport, account: "0x0000000000000000000000000000000000000001")
                 .close("BTC", size: Decimal(string: "0.2")!)
             #expect(try await Self.orderBody(transport).contains(#""b":false,"p":"57231","s":"0.2","r":true,"#))
         }
@@ -89,7 +89,7 @@ extension HyperliquidKitTests {
         @Test func `closing without a position sends nothing and returns no results`() async throws {
             let empty = #"{"marginSummary":{"accountValue":"1","totalNtlPos":"0","totalRawUsd":"1","totalMarginUsed":"0"},"crossMarginSummary":{"accountValue":"1","totalNtlPos":"0","totalRawUsd":"1","totalMarginUsed":"0"},"withdrawable":"1","assetPositions":[]}"#
             let transport = Self.transport(Self.meta, empty)
-            let results = try await OrderRequests.test(transport, account: "0x0000000000000000000000000000000000000001")
+            let results = try await OrderEndpoints.test(transport, account: "0x0000000000000000000000000000000000000001")
                 .close("BTC")
             #expect(results.isEmpty)
             #expect(await transport.requests.count == 2)
@@ -99,7 +99,7 @@ extension HyperliquidKitTests {
             let both = #"{"status":"ok","response":{"type":"order","data":{"statuses":[{"resting":{"oid":1}},{"resting":{"oid":2}}]}}}"#
             let transport = Self.transport(Self.meta, Self.mids, both)
             let clientID = try Hyperliquid.ClientOrderID("0x0000000000000000000000000000000a")
-            _ = try await OrderRequests.test(transport).place([
+            _ = try await OrderEndpoints.test(transport).place([
                 .market(.buy, "BTC", size: 1, clientID: clientID), .market(.sell, "ETH", size: 1),
             ])
             #expect(await transport.bodies.filter { $0.contains("allMids") }.count == 1)
@@ -113,21 +113,21 @@ extension HyperliquidKitTests {
                 #"[null,{"name":"xyz","fullName":"XYZ","deployer":"0x88806a71d74ad0a510b350545c9ae490912f0888"}]"#,
                 #"{"universe":[{"name":"xyz:XYZ100","szDecimals":4}]}"#, #"{"xyz:XYZ100":"25947.0"}"#, Self.filled
             )
-            _ = try await OrderRequests.test(transport).place([.market(.buy, "xyz:XYZ100", size: 1)])
+            _ = try await OrderEndpoints.test(transport).place([.market(.buy, "xyz:XYZ100", size: 1)])
             #expect(await transport.bodies[2] == #"{"type":"allMids","dex":"xyz"}"#)
             #expect(try await Self.orderBody(transport).contains(#""a":110000,"b":true,"p":"27244","#))
         }
 
         @Test func `a price of zero counts as none and uses the mid`() async throws {
             let transport = Self.transport(Self.meta, Self.mids, Self.filled)
-            _ = try await OrderRequests.test(transport).place([.market(.buy, "BTC", size: 1, price: 0)])
+            _ = try await OrderEndpoints.test(transport).place([.market(.buy, "BTC", size: 1, price: 0)])
             #expect(try await Self.orderBody(transport).contains(#""p":"63256""#))
         }
 
         @Test func `a modification can't be a market order`() async {
             let transport = FakeTransport()
             await #expect {
-                try await OrderRequests.test(transport).modify([.init(.id(.init(rawValue: 1)), to: .market(.buy, "BTC", size: 1))])
+                try await OrderEndpoints.test(transport).modify([.init(.id(.init(rawValue: 1)), to: .market(.buy, "BTC", size: 1))])
             } throws: { error in
                 (error as? Hyperliquid.ClientError)?.reason == .invalidRequest
             }
@@ -136,14 +136,14 @@ extension HyperliquidKitTests {
 
         @Test func `closing with a size of zero closes the whole position`() async throws {
             let transport = Self.transport(Self.meta, Self.state("0.5"), Self.mids, Self.filled)
-            _ = try await OrderRequests.test(transport, account: "0x0000000000000000000000000000000000000001").close("BTC", size: 0)
+            _ = try await OrderEndpoints.test(transport, account: "0x0000000000000000000000000000000000000001").close("BTC", size: 0)
             #expect(try await Self.orderBody(transport).contains(#""s":"0.5","r":true,"#))
         }
 
         @Test func `bad slippage on a close throws even without a position`() async {
             let transport = FakeTransport()
             await #expect {
-                try await OrderRequests.test(transport, account: "0x0000000000000000000000000000000000000001")
+                try await OrderEndpoints.test(transport, account: "0x0000000000000000000000000000000000000001")
                     .close("BTC", slippage: .percent(100))
             } throws: { error in
                 (error as? Hyperliquid.ClientError)?.reason == .invalidRequest
@@ -164,7 +164,7 @@ extension HyperliquidKitTests {
         @Test func `closing without a signer throws before anything is sent`() async {
             let transport = FakeTransport()
             await #expect {
-                try await OrderRequests.test(transport, signer: nil).close("BTC")
+                try await OrderEndpoints.test(transport, signer: nil).close("BTC")
             } throws: { error in
                 (error as? Hyperliquid.ClientError)?.reason == .missingSigner
             }

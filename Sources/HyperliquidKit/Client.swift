@@ -50,11 +50,11 @@ extension Hyperliquid {
             )
             let directory = AssetDirectory(info: info)
             let account = configuration.vaultAddress ?? account ?? signer?.address
-            market = MarketRequests(info: info, directory: directory)
-            self.account = AccountRequests(info: info, account: account)
-            position = PositionRequests(info: info, exchange: exchange, directory: directory, account: account)
-            order = OrderRequests(info: info, exchange: exchange, directory: directory, account: account)
-            twap = TwapRequests(info: info, exchange: exchange, directory: directory, account: account)
+            market = MarketEndpoints(info: info, directory: directory)
+            self.account = AccountEndpoints(info: info, account: account)
+            position = PositionEndpoints(info: info, exchange: exchange, directory: directory, account: account)
+            order = OrderEndpoints(info: info, exchange: exchange, directory: directory, account: account)
+            twap = TwapEndpoints(info: info, exchange: exchange, directory: directory, account: account)
             connection = StreamConnection(
                 url: configuration.network.streamURL, transport: webSocketTransport, directory: directory
             )

@@ -2,7 +2,7 @@ import Foundation
 import HyperliquidKitCore
 
 /// An account's state, read from `/info`.
-struct AccountRequests: Hyperliquid.AccountAPI {
+struct AccountEndpoints: Hyperliquid.AccountAPI {
     let info: InfoClient
     /// The account a read uses when it is given none.
     let account: Hyperliquid.Address?

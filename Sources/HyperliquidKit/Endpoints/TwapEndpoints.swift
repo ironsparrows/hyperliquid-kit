@@ -2,7 +2,7 @@ import Foundation
 import HyperliquidKitCore
 
 /// An account's TWAP orders, read from `/info`, and its TWAP actions, sent to `/exchange`.
-struct TwapRequests: Hyperliquid.TwapAPI {
+struct TwapEndpoints: Hyperliquid.TwapAPI {
     let info: InfoClient
     let exchange: ExchangeClient
     let directory: AssetDirectory
@@ -20,7 +20,7 @@ struct TwapRequests: Hyperliquid.TwapAPI {
 
 // MARK: - Actions
 
-extension TwapRequests {
+extension TwapEndpoints {
     func place(_ twap: Hyperliquid.TwapRequest, expiresAfter: Date?) async throws -> Hyperliquid.TwapPlacementResult {
         _ = try exchange.requireSigner()
         let minutes = try wholeMinutes(twap.duration)

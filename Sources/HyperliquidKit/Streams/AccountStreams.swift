@@ -1,12 +1,18 @@
 import Foundation
 import HyperliquidKitCore
 
-/// Account streams: each subscribes for `user`, else the client's account, and ends with
-/// `missingAccount` before subscribing when there is neither.
-extension Streams {
+/// The account streams over the client's ``StreamConnection``: each subscribes for `user`, else the
+/// client's account, and ends with `missingAccount` before subscribing when there is neither.
+struct AccountStreams: Sendable {
+    let connection: StreamConnection
+    /// The account that account streams given no user stream.
+    let account: Hyperliquid.Address?
+
+    // MARK: Account
+
     func orderUpdates(for user: Hyperliquid.Address?) -> AsyncThrowingStream<Hyperliquid.HistoricalOrder, any Error> {
         stream(for: user, { .userless("orderUpdates", channel: "orderUpdates", $0) }, buffering: .all) { data in
-            try Self.payload([Hyperliquid.HistoricalOrder].self, of: data)
+            try StreamConnection.payload([Hyperliquid.HistoricalOrder].self, of: data)
         }
     }
 
@@ -14,14 +20,14 @@ extension Streams {
         -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.Fill>, any Error>
     {
         stream(for: user, { .fills($0, aggregateByTime: aggregateByTime) }, buffering: .all) { data in
-            [try Self.payload(BatchPush<Hyperliquid.Fill, Fills>.self, of: data).batch]
+            [try StreamConnection.payload(BatchPush<Hyperliquid.Fill, Fills>.self, of: data).batch]
         }
     }
 
     func events(for user: Hyperliquid.Address?) -> AsyncThrowingStream<Hyperliquid.UserEvent, any Error> {
         // Events arrive on channel `user`.
         stream(for: user, { .userless("userEvents", channel: "user", $0) }, buffering: .all) { data in
-            try Self.payload(EventsPush.self, of: data).events
+            try StreamConnection.payload(EventsPush.self, of: data).events
         }
     }
 
@@ -29,7 +35,7 @@ extension Streams {
         -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.FundingPayment>, any Error>
     {
         stream(for: user, { .user("userFundings", $0) }, buffering: .all) { data in
-            [try Self.payload(BatchPush<Hyperliquid.FundingPayment, Fundings>.self, of: data).batch]
+            [try StreamConnection.payload(BatchPush<Hyperliquid.FundingPayment, Fundings>.self, of: data).batch]
         }
     }
 
@@ -37,7 +43,7 @@ extension Streams {
         -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.LedgerUpdate>, any Error>
     {
         stream(for: user, { .user("userNonFundingLedgerUpdates", $0) }, buffering: .all) { data in
-            [try Self.payload(BatchPush<Hyperliquid.LedgerUpdate, LedgerUpdates>.self, of: data).batch]
+            [try StreamConnection.payload(BatchPush<Hyperliquid.LedgerUpdate, LedgerUpdates>.self, of: data).batch]
         }
     }
 
@@ -45,7 +51,7 @@ extension Streams {
         -> AsyncThrowingStream<Hyperliquid.PerpetualState, any Error>
     {
         stream(for: user, { .userOnDex("clearinghouseState", $0, dex: dex) }, buffering: .latest) { data in
-            [try Self.payload(PerpetualStatePush.self, of: data).clearinghouseState]
+            [try StreamConnection.payload(PerpetualStatePush.self, of: data).clearinghouseState]
         }
     }
 
@@ -53,7 +59,7 @@ extension Streams {
         -> AsyncThrowingStream<[Hyperliquid.Order], any Error>
     {
         stream(for: user, { .userOnDex("openOrders", $0, dex: dex) }, buffering: .latest) { data in
-            [try Self.payload(PendingOrdersPush.self, of: data).orders]
+            [try StreamConnection.payload(PendingOrdersPush.self, of: data).orders]
         }
     }
 
@@ -61,19 +67,19 @@ extension Streams {
         -> AsyncThrowingStream<Hyperliquid.TradingLimits, any Error>
     {
         stream(for: user, { .activeAssetData(coin, $0) }, buffering: .latest) { data in
-            [try Self.payload(Hyperliquid.TradingLimits.self, of: data)]
+            [try StreamConnection.payload(Hyperliquid.TradingLimits.self, of: data)]
         }
     }
 
     func balances(for user: Hyperliquid.Address?) -> AsyncThrowingStream<[Hyperliquid.Balance], any Error> {
         stream(for: user, { .user("spotState", $0) }, buffering: .latest) { data in
-            [try Self.payload(BalancesPush.self, of: data).spotState.balances]
+            [try StreamConnection.payload(BalancesPush.self, of: data).spotState.balances]
         }
     }
 
     func notifications(for user: Hyperliquid.Address?) -> AsyncThrowingStream<String, any Error> {
         stream(for: user, { .userless("notification", channel: "notification", $0) }, buffering: .all) { data in
-            [try Self.payload(NotificationPush.self, of: data).notification]
+            [try StreamConnection.payload(NotificationPush.self, of: data).notification]
         }
     }
 
@@ -81,7 +87,7 @@ extension Streams {
         -> AsyncThrowingStream<[Hyperliquid.TwapID: Hyperliquid.Twap], any Error>
     {
         stream(for: user, { .userOnDex("twapStates", $0, dex: dex) }, buffering: .latest) { data in
-            [try Self.payload(TwapStatesPush.self, of: data).states]
+            [try StreamConnection.payload(TwapStatesPush.self, of: data).states]
         }
     }
 
@@ -89,7 +95,7 @@ extension Streams {
         -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.TwapSliceFill>, any Error>
     {
         stream(for: user, { .user("userTwapSliceFills", $0) }, buffering: .all) { data in
-            [try Self.payload(BatchPush<Hyperliquid.TwapSliceFill, TwapSliceFills>.self, of: data).batch]
+            [try StreamConnection.payload(BatchPush<Hyperliquid.TwapSliceFill, TwapSliceFills>.self, of: data).batch]
         }
     }
 
@@ -97,11 +103,11 @@ extension Streams {
         -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.TwapHistoryEntry>, any Error>
     {
         stream(for: user, { .user("userTwapHistory", $0) }, buffering: .all) { data in
-            [try Self.payload(BatchPush<Hyperliquid.TwapHistoryEntry, TwapHistory>.self, of: data).batch]
+            [try StreamConnection.payload(BatchPush<Hyperliquid.TwapHistoryEntry, TwapHistory>.self, of: data).batch]
         }
     }
 
-    // MARK: Helpers
+    // MARK: Subscribing
 
     /// A stream of the elements each push holds, subscribed for `user`, else the client's account.
     private func stream<Element: Sendable>(

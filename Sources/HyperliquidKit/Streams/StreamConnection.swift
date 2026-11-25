@@ -346,7 +346,7 @@ actor StreamConnection {
             id: id, session: session,
             receiver: Task { [weak self] in
                 for await frame in session.frames {
-                    guard let routed = await Self.route(frame) else { continue }
+                    guard let routed = await StreamRouter.route(frame) else { continue }
                     guard let self else { return }
                     await self.receive(routed.push, for: routed.destination, on: id)
                 }
@@ -384,15 +384,12 @@ actor StreamConnection {
 
     // MARK: Receiving
 
-    /// Where a push goes: the streams of one topic, or of every topic on a channel.
-    enum Destination: Hashable, Sendable {
-        case topic(Topic)
-        /// For a push whose topic can't be read, such as an order book diff that doesn't inflate,
-        /// which every stream that could be missing it must hear about.
-        case channel(String)
+    /// The `data` of a push `{"channel": …, "data": …}`.
+    static func payload<Payload: Decodable>(_ type: Payload.Type, of data: Data) throws -> Payload {
+        try JSONDecoder().decode(Push<Payload>.self, from: data).data
     }
 
-    private func receive(_ data: Data, for destination: Destination, on id: UInt64) {
+    private func receive(_ data: Data, for destination: StreamRouter.Destination, on id: UInt64) {
         guard connection?.id == id else { return }
         let topics = switch destination {
         case .topic(let topic): [topic]
@@ -411,6 +408,11 @@ actor StreamConnection {
     }
 
     // MARK: Wire
+
+    /// `{"channel": …, "data": …}`.
+    private struct Push<Payload: Decodable>: Decodable {
+        let data: Payload
+    }
 
     /// `{"method": …, "subscription": …}`.
     private static func message(_ method: String, _ subscription: ActionValue) -> String {
