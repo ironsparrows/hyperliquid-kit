@@ -40,7 +40,7 @@ xcodebuild docbuild -scheme HyperliquidKit -destination 'generic/platform=macOS'
 
 The documentation build must show no warnings from `HyperliquidKit` or `HyperliquidKitCore`; the dependencies' own warnings are theirs. `HyperliquidKit`'s archive is the documentation apps read: it includes every `HyperliquidKitCore` type, which `HyperliquidKitCore`'s own archive repeats for modules that import it alone.
 
-The code of the documentation's examples and the README's lives in `Tests/HyperliquidKitTests/DocumentationExamples.swift`: `swift build --build-tests` compiles it, and `swift test` checks that each example's lines appear, in order, in one of its functions. Change both together.
+The code of the documentation's examples and the README's lives in `Tests/HyperliquidKitTests/PublicAPI/DocumentationExamples.swift`: `swift build --build-tests` compiles it, and `swift test` checks that each example's lines appear, in order, in one of its functions. Change both together.
 
 Only this package's warnings can fail the build: SwiftPM suppresses warnings in dependencies.
 
