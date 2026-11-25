@@ -23,6 +23,10 @@ Git ignores the local settings file, so the copy never has it. Stage a deleted t
 Then, from the copy. With `HYPERLIQUID_AGENT_KEY` and `HYPERLIQUID_ACCOUNT` set in the shell, `swift test` also runs the live suites, which trade on mainnet: unset them first, or add `--skip Live`.
 
 ```bash
+swift format lint --strict -r Sources Tests Package.swift
+```
+
+```bash
 swift build --build-tests -Xswiftc -warnings-as-errors
 ```
 
@@ -45,6 +49,20 @@ The code of the documentation's examples and the README's lives in `Tests/Hyperl
 Only this package's warnings can fail the build: SwiftPM suppresses warnings in dependencies.
 
 Linux has no local check yet. `swift build` and `swift test` on Linux are unverified until CI or a Linux machine runs them, including the `HyperliquidKitTestSupport` target, which imports Testing.
+
+## Formatting
+
+swift-format reads `.swift-format`. Format the code before a pull request, and check it as CI does:
+
+```bash
+swift format -i -r Sources Tests Package.swift
+```
+
+```bash
+swift format lint --strict -r Sources Tests Package.swift
+```
+
+The configuration is swift-language-models' with one difference: `AllPublicDeclarationsHaveDocumentation` is off, so an obvious stored property can go without a doc comment. A force unwrap or `try!` stays only with a `// swift-format-ignore: NeverForceUnwrap` (or `NeverUseForceTry`) comment and a line that says why it can't fail.
 
 ## Tests
 
@@ -93,6 +111,33 @@ extension LocalLiveTestSettings {
 Never put the key in an Xcode scheme's environment variables: a shared scheme is a file that can be committed.
 
 Values set in the environment win over the file's: when either is set there, the file isn't read. The two are always taken together from one place. Without the file, the package builds and live tests skip. The values are compiled into the build folders (`.build`, DerivedData), so delete those before sharing them.
+
+## CI
+
+`.github/workflows/ci.yml` runs on every pull request and on pushes to `main`: on macOS, the format lint, the build with warnings as errors and `swift test`; on Linux, in the `swift:6.4` container with zlib's headers, the same build and `swift test`. The iOS, tvOS and visionOS builds and the documentation build run before each release. CI has no keys, so the live suites skip there; they run only on your machine.
+
+## Releases
+
+A pull request's label decides the release its merge makes:
+
+| Label | Release | Example |
+|---|---|---|
+| `release:patch` | a fix | 0.1.0 to 0.1.1 |
+| `release:minor` | a new feature | 0.1.0 to 0.2.0 |
+| `release:major` | a breaking change | 0.1.0 to 0.2.0 before 1.0, and 1.2.0 to 2.0.0 after it |
+| none | nothing | |
+
+When a labeled pull request merges into `main`, `.github/workflows/release.yml` first builds and tests on macOS and Linux, builds for iOS, tvOS and visionOS, and builds the documentation. Only when all of them pass does it tag the next version, publish a GitHub release whose notes group the merged pull requests by these labels (`.github/release.yml`), and start `.github/workflows/documentation.yml`, which publishes that release's documentation to GitHub Pages. Running the release workflow by hand from `main`, with the bump to apply, does the same. The workflow tags no version before the first, so `0.1.0` is released by hand, as a GitHub release rather than a bare tag, since the documentation workflow publishes the latest release; then start the documentation workflow. `1.0.0` is released by hand too.
+
+```bash
+gh release create 0.1.0 --target <commit on main> --generate-notes
+```
+
+```bash
+gh workflow run documentation.yml --ref main
+```
+
+The labels `release:patch`, `release:minor` and `release:major` must exist in the repository. GitHub Pages must be set to deploy from GitHub Actions, and on a private repository it needs a paid GitHub plan for the organization; until then the documentation workflow fails and releases still tag and publish.
 
 ## Commits
 
