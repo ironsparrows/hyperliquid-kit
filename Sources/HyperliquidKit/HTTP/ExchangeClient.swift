@@ -62,7 +62,12 @@ struct ExchangeClient: Sendable {
 
     /// Sends an action whose response the client doesn't read.
     ///
-    /// - Parameter nonce: The nonce to sign with; `nil` takes the signer's next one.
+    /// - Parameters:
+    ///   - action: The action to sign and send.
+    ///   - nonce: The nonce to sign with; `nil` takes the signer's next one.
+    ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+    /// - Throws: ``HyperliquidError`` when Hyperliquid rejects the action or answers in a way the client can't use;
+    ///   ``Hyperliquid/ClientError`` without a signer or when the request fails, carrying the nonce once it was sent.
     func perform(_ action: ActionValue, nonce: UInt64? = nil, expiresAfter: Date?) async throws {
         _ = try await perform(action, nonce: nonce, expiresAfter: expiresAfter, decoding: IgnoredResponse.self)
     }

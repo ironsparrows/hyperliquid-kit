@@ -45,6 +45,8 @@ enum DocumentationExamples {
         print(mids["BTC"] ?? 0)
     }
 
+    // swift-format-ignore: NeverForceUnwrap
+    // The guide shows a decimal built from a fixed string, which always parses.
     static func placeAndCancelOrder(client: Hyperliquid.Client) async throws {
         guard let mid = try await client.market.mids()["BTC"],
             let btc = try await client.market.perpetuals().first(where: { $0.coin == "BTC" })

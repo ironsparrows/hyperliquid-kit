@@ -38,6 +38,10 @@ extension Hyperliquid {
         ///   - aggregateByTime: Combines the partial fills of a crossing order that matched several
         ///     resting orders.
         ///   - user: The account; `nil` for the client's.
+        /// - Returns: The fills, at most 2000.
+        /// - Throws: ``ClientError/Reason/missingAccount`` without an account, before anything is sent;
+        ///   ``HyperliquidError`` when Hyperliquid refuses the read or answers in a way the client can't use;
+        ///   ``ClientError`` when the request fails. `CancellationError` when the task is canceled.
         func fills(aggregateByTime: Bool, for user: Address?) async throws -> [Fill]
 
         /// The account's fills from `start` to `end`, or to now when `end` is `nil`. A response holds at
@@ -49,6 +53,10 @@ extension Hyperliquid {
         ///   - aggregateByTime: Combines the partial fills of a crossing order that matched several
         ///     resting orders.
         ///   - user: The account; `nil` for the client's.
+        /// - Returns: The fills, at most 2000.
+        /// - Throws: ``ClientError/Reason/missingAccount`` without an account, before anything is sent;
+        ///   ``HyperliquidError`` when Hyperliquid refuses the read or answers in a way the client can't use;
+        ///   ``ClientError`` when the request fails. `CancellationError` when the task is canceled.
         func fills(from start: Date, to end: Date?, aggregateByTime: Bool, for user: Address?) async throws -> [Fill]
 
         // MARK: Actions
@@ -71,6 +79,10 @@ extension Hyperliquid {
         ///   - grouping: How the orders relate, such as ``Grouping/standalone``.
         ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
         ///     An action rejected this way counts five times against the address's request limit.
+        /// - Returns: One result per order, in the order given.
+        /// - Throws: ``ClientError`` when the client refuses the action before sending it or the request fails, and
+        ///   ``HyperliquidError`` when Hyperliquid rejects the action or answers in a way the client can't use; once the
+        ///   action was sent, both carry its nonce. `CancellationError` when the task is canceled.
         func place(_ orders: [OrderRequest], grouping: Grouping, expiresAfter: Date?) async throws -> [PlacementResult]
 
         /// Closes the account's position in `coin` with a reduce-only market order, or does nothing and
@@ -85,6 +97,10 @@ extension Hyperliquid {
         ///   - slippage: As for ``OrderRequest/market(_:_:size:price:slippage:clientID:)``.
         ///   - clientID: The app's ID for the closing order.
         ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        /// - Returns: The closing order's result, or none when there is no position.
+        /// - Throws: ``ClientError`` when the client refuses the action before sending it or the request fails, and
+        ///   ``HyperliquidError`` when Hyperliquid rejects the action or answers in a way the client can't use; once the
+        ///   action was sent, both carry its nonce. `CancellationError` when the task is canceled.
         func close(
             _ coin: Coin, size: Decimal?, price: Decimal?, slippage: Slippage, clientID: ClientOrderID?, expiresAfter: Date?
         ) async throws -> [PlacementResult]
@@ -95,6 +111,10 @@ extension Hyperliquid {
         ///   - orders: The orders, each with its coin; each gets its own result.
         ///   - fast: Hyperliquid rejects a fast cancel of a trigger order.
         ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        /// - Returns: One result per order, in the order given.
+        /// - Throws: ``ClientError`` when the client refuses the action before sending it or the request fails, and
+        ///   ``HyperliquidError`` when Hyperliquid rejects the action or answers in a way the client can't use; once the
+        ///   action was sent, both carry its nonce. `CancellationError` when the task is canceled.
         func cancel(_ orders: [OrderReference], fast: Bool, expiresAfter: Date?) async throws -> [CancelResult]
 
         /// Cancels orders by the app's client order ID. (`cancelByCloid`)
@@ -103,6 +123,10 @@ extension Hyperliquid {
         ///   - orders: The orders, each with its coin; each gets its own result.
         ///   - fast: Hyperliquid rejects a fast cancel of a trigger order.
         ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        /// - Returns: One result per order, in the order given.
+        /// - Throws: ``ClientError`` when the client refuses the action before sending it or the request fails, and
+        ///   ``HyperliquidError`` when Hyperliquid rejects the action or answers in a way the client can't use; once the
+        ///   action was sent, both carry its nonce. `CancellationError` when the task is canceled.
         func cancel(clientIDs orders: [ClientOrderReference], fast: Bool, expiresAfter: Date?) async throws
             -> [CancelResult]
 
@@ -117,6 +141,10 @@ extension Hyperliquid {
         ///     version must be a resting limit order (add-liquidity-only, or good-til-canceled that
         ///     wouldn't match at once, which Hyperliquid then rests as add-liquidity-only).
         ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        /// - Returns: One result per change, in the order given.
+        /// - Throws: ``ClientError`` when the client refuses the action before sending it or the request fails, and
+        ///   ``HyperliquidError`` when Hyperliquid rejects the action or answers in a way the client can't use; once the
+        ///   action was sent, both carry its nonce. `CancellationError` when the task is canceled.
         func modify(_ changes: [OrderChange], alwaysPlace: Bool, expiresAfter: Date?) async throws -> [PlacementResult]
 
         /// Cancels all of the account's orders at `deadline`, at least 5 seconds ahead: a dead man's
@@ -129,6 +157,9 @@ extension Hyperliquid {
         /// - Parameters:
         ///   - deadline: When to cancel, at least 5 seconds ahead.
         ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        /// - Throws: ``ClientError`` when the client refuses the action before sending it or the request fails, and
+        ///   ``HyperliquidError`` when Hyperliquid rejects the action or answers in a way the client can't use; once the
+        ///   action was sent, both carry its nonce. `CancellationError` when the task is canceled.
         func scheduleCancelAll(at deadline: Date, expiresAfter: Date?) async throws
 
         /// Removes the scheduled cancel. (`scheduleCancel` without a time)
@@ -137,6 +168,9 @@ extension Hyperliquid {
         /// traded enough volume.
         ///
         /// - Parameter expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        /// - Throws: ``ClientError`` when the client refuses the action before sending it or the request fails, and
+        ///   ``HyperliquidError`` when Hyperliquid rejects the action or answers in a way the client can't use; once the
+        ///   action was sent, both carry its nonce. `CancellationError` when the task is canceled.
         func clearScheduledCancel(expiresAfter: Date?) async throws
 
         /// Marks `nonce` as used, so an action sent with it can't execute: the way to stop an action
@@ -145,6 +179,9 @@ extension Hyperliquid {
         /// - Parameters:
         ///   - nonce: The nonce of the action to stop, from the error it threw.
         ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        /// - Throws: ``ClientError`` when the client refuses the action before sending it or the request fails, and
+        ///   ``HyperliquidError`` when Hyperliquid rejects the action or answers in a way the client can't use; once the
+        ///   action was sent, both carry its nonce. `CancellationError` when the task is canceled.
         func invalidate(nonce: UInt64, expiresAfter: Date?) async throws
     }
 }

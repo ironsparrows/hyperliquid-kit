@@ -39,7 +39,11 @@ private func rounded(_ value: Decimal, _ field: String, decimals: Int, tolerance
     var result = Decimal()
     NSDecimalRound(&result, &exact, decimals, .plain)
     // Through text, so each converts to the nearest `Double`, as Python's float parsing does.
+    // swift-format-ignore: NeverForceUnwrap
+    // A finite decimal's text always parses as a `Double`.
     let move = abs(Double(result.wireString)! - Double(value.wireString)!)
+    // swift-format-ignore: NeverForceUnwrap
+    // A power of ten's text always parses as a `Double`.
     guard abs(result - value) < tolerance || move < Double(tolerance.wireString)! else {
         throw Hyperliquid.ClientError(
             .invalidRequest,

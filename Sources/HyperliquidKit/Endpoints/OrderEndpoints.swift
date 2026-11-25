@@ -218,6 +218,8 @@ extension OrderEndpoints {
     }
 }
 
+// swift-format-ignore: NeverForceUnwrap
+// A decimal's text and a `%f` or `%g` rendering of a finite `Double` always parse.
 /// The limit price of a market order: `price` moved by `slippage` against the order, rounded to 5
 /// significant figures and then to `6 − sizeDecimals` decimals.
 ///

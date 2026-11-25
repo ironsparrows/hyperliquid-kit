@@ -39,7 +39,8 @@ extension Hyperliquid {
 
 extension Hyperliquid.Candle: Decodable {
     private enum CodingKeys: String, CodingKey {
-        case t, T, s, i, o, h, l, c, v, n
+        case t, s, i, o, h, l, c, v, n
+        case closeTime = "T"
     }
 
     public init(from decoder: any Decoder) throws {
@@ -50,7 +51,7 @@ extension Hyperliquid.Candle: Decodable {
         coin = try container.decode(Hyperliquid.Coin.self, forKey: .s)
         interval = try container.decode(Interval.self, forKey: .i)
         openTime = try container.decode(WireDate.self, forKey: .t).value
-        closeTime = try container.decode(WireDate.self, forKey: .T).value
+        closeTime = try container.decode(WireDate.self, forKey: .closeTime).value
         open = try decimal(.o)
         high = try decimal(.h)
         low = try decimal(.l)

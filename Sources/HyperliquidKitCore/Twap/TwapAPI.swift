@@ -36,6 +36,10 @@ extension Hyperliquid {
         ///   - twap: The TWAP order.
         ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
         ///     An action rejected this way counts five times against the address's request limit.
+        /// - Returns: The TWAP's ID once it runs, or Hyperliquid's reason for rejecting it.
+        /// - Throws: ``ClientError`` when the client refuses the action before sending it or the request fails, and
+        ///   ``HyperliquidError`` when Hyperliquid rejects the action or answers in a way the client can't use; once the
+        ///   action was sent, both carry its nonce. `CancellationError` when the task is canceled.
         func place(_ twap: TwapRequest, expiresAfter: Date?) async throws -> TwapPlacementResult
 
         /// Cancels a running TWAP order. (`twapCancel`)
@@ -46,6 +50,10 @@ extension Hyperliquid {
         ///   - id: The TWAP order's ID.
         ///   - coin: The perpetual it trades.
         ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        /// - Returns: Whether the TWAP was canceled, or Hyperliquid's reason why not.
+        /// - Throws: ``ClientError`` when the client refuses the action before sending it or the request fails, and
+        ///   ``HyperliquidError`` when Hyperliquid rejects the action or answers in a way the client can't use; once the
+        ///   action was sent, both carry its nonce. `CancellationError` when the task is canceled.
         func cancel(_ id: TwapID, coin: Coin, expiresAfter: Date?) async throws -> CancelResult
     }
 }

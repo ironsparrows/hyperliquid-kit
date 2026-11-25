@@ -125,6 +125,7 @@ extension Hyperliquid {
         ///   - aggregateByTime: Combines the partial fills of a crossing order that matched several
         ///     resting orders.
         ///   - user: The account; `nil` for the client's.
+        /// - Returns: A stream of batches that ends with an error when the connection drops.
         func fills(aggregateByTime: Bool, for user: Address?) -> AsyncThrowingStream<Batch<Fill>, any Error>
 
         /// The account's fills, funding payments, liquidations and the orders Hyperliquid canceled,

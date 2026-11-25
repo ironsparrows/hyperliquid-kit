@@ -40,6 +40,9 @@ extension Hyperliquid {
         ///   - coin: The perpetual.
         ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
         ///     An action rejected this way counts five times against the address's request limit.
+        /// - Throws: ``ClientError`` when the client refuses the action before sending it or the request fails, and
+        ///   ``HyperliquidError`` when Hyperliquid rejects the action or answers in a way the client can't use; once the
+        ///   action was sent, both carry its nonce. `CancellationError` when the task is canceled.
         func setLeverage(_ leverage: Leverage, for coin: Coin, expiresAfter: Date?) async throws
 
         /// Adds margin to an isolated position, or removes it when `amount` is negative, in USD.
@@ -54,6 +57,9 @@ extension Hyperliquid {
         ///   - coin: The perpetual of the isolated position.
         ///   - amount: The USD to add, or to remove when negative.
         ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        /// - Throws: ``ClientError`` when the client refuses the action before sending it or the request fails, and
+        ///   ``HyperliquidError`` when Hyperliquid rejects the action or answers in a way the client can't use; once the
+        ///   action was sent, both carry its nonce. `CancellationError` when the task is canceled.
         func adjustMargin(_ coin: Coin, by amount: Decimal, expiresAfter: Date?) async throws
 
         /// Changes the position's isolated margin to target `leverage` instead of a USD amount, on an
@@ -69,6 +75,9 @@ extension Hyperliquid {
         ///   - coin: The perpetual of the isolated position.
         ///   - leverage: The leverage the margin should give.
         ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
+        /// - Throws: ``ClientError`` when the client refuses the action before sending it or the request fails, and
+        ///   ``HyperliquidError`` when Hyperliquid rejects the action or answers in a way the client can't use; once the
+        ///   action was sent, both carry its nonce. `CancellationError` when the task is canceled.
         func topUpMargin(_ coin: Coin, toLeverage leverage: Decimal, expiresAfter: Date?) async throws
     }
 }

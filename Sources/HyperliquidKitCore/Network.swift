@@ -13,6 +13,8 @@ extension Hyperliquid {
         /// The `hyperliquidChain` an action signed by an account's own wallet names.
         package let chainName: String
 
+        // swift-format-ignore: NeverForceUnwrap
+        // Fixed, valid URLs.
         public static let mainnet = Self(
             description: "mainnet",
             apiURL: URL(string: "https://api.hyperliquid.xyz")!,
@@ -21,6 +23,8 @@ extension Hyperliquid {
             chainName: "Mainnet"
         )
 
+        // swift-format-ignore: NeverForceUnwrap
+        // Fixed, valid URLs.
         public static let testnet = Self(
             description: "testnet",
             apiURL: URL(string: "https://api.hyperliquid-testnet.xyz")!,

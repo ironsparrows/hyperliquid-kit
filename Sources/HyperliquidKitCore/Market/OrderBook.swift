@@ -51,12 +51,15 @@ extension Hyperliquid.OrderBook {
 
         /// How many significant figures prices are grouped to.
         public enum SignificantFigures: Int, Sendable, CaseIterable {
-            case two = 2, three, four, five
+            case two = 2
+            case three, four, five
         }
 
         /// The step, in the last of 5 significant figures, that prices are grouped by.
         public enum Mantissa: Int, Sendable, CaseIterable {
-            case one = 1, two = 2, five = 5
+            case one = 1
+            case two = 2
+            case five = 5
         }
     }
 }

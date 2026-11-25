@@ -45,6 +45,8 @@ extension Hyperliquid {
             try container.encode(description)
         }
 
+        // swift-format-ignore: NeverForceUnwrap
+        // The initializers accept only `0x` and 40 hexadecimal digits.
         /// The 20 bytes the address spells, as signatures cover them.
         package var bytes: [UInt8] {
             [UInt8](hexadecimal: description.dropFirst(2))!

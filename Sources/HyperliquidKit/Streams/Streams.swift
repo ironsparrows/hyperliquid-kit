@@ -8,7 +8,9 @@ struct Streams: Hyperliquid.StreamAPI {
     let market: MarketStreams
     let account: AccountStreams
 
-    /// - Parameter account: The account that account streams given no user stream.
+    /// - Parameters:
+    ///   - connection: The connection every stream shares.
+    ///   - account: The account that account streams given no user stream.
     init(connection: StreamConnection, account: Hyperliquid.Address? = nil) {
         self.connection = connection
         market = MarketStreams(connection: connection)

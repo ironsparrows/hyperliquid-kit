@@ -5,6 +5,7 @@
 /// wallet's actions and is the only key in this repository.
 enum SigningVectors {
     static let pythonTestKey = "0x0123456789012345678901234567890123456789012345678901234567890123"
+    // swift-format-ignore: NeverUseForceTry
     // The key is valid, so building the signer can't fail.
     static let pythonTestSigner = try! Hyperliquid.PrivateKeySigner(hexKey: pythonTestKey)
 
