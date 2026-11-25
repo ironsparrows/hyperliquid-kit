@@ -137,9 +137,8 @@ xcodebuild docbuild -scheme HyperliquidKit -destination 'generic/platform=macOS'
 
 ## Contributing
 
-Ask questions and share ideas in [Discussions](https://github.com/ironsparrows/hyperliquid-kit/discussions), and report
-bugs in [Issues](https://github.com/ironsparrows/hyperliquid-kit/issues). Pull requests are welcome; for a larger
-change, open an issue first. [CONTRIBUTING.md](CONTRIBUTING.md) lists the checks, the live tests, the formatting and
+Report bugs and ask questions in [Issues](https://github.com/ironsparrows/hyperliquid-kit/issues). Pull requests are
+welcome; for a larger change, open an issue first. [CONTRIBUTING.md](CONTRIBUTING.md) lists the checks, the live tests, the formatting and
 the release labels, and [ARCHITECTURE.md](ARCHITECTURE.md) the layout and vocabulary.
 
 ## Related projects

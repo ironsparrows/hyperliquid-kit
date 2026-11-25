@@ -1,0 +1,36 @@
+name: Bug report
+description: Something doesn't work the way the documentation says it should.
+labels: [bug]
+body:
+  - type: textarea
+    attributes:
+      label: Description
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      description: The smallest code that shows the problem, with the coin, the network and the call it makes.
+      render: swift
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Error or response
+      description: >
+        The error the call throws, or the result it returns. Remove private keys, API wallet keys and any address you
+        want to keep private first.
+      render: text
+  - type: input
+    attributes:
+      label: Package version
+      placeholder: "0.1.0, or a commit"
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Swift or Xcode, and OS versions
+      placeholder: "Xcode 27.2, iOS 27.2 simulator; or Swift 6.4, Ubuntu 24.04"
+    validations:
+      required: true

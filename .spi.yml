@@ -1,0 +1,13 @@
+version: 1
+builder:
+  configs:
+    - documentation_targets: [HyperliquidKit]
+    # Build the library, not the package scheme, which also holds the test targets. watchOS isn't supported.
+    - platform: ios
+      scheme: HyperliquidKit
+    - platform: macos-xcodebuild
+      scheme: HyperliquidKit
+    - platform: tvos
+      scheme: HyperliquidKit
+    - platform: visionos
+      scheme: HyperliquidKit
