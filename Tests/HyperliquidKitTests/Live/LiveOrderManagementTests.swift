@@ -7,8 +7,8 @@ extension HyperliquidKitTests.LiveTradingTests {
     // Places real orders on mainnet with the account's API wallet: resting BTC buys of $11 to $13 far
     // under the mid price, modified and canceled by client order ID and with take-profit and stop-loss
     // children; about $14 of BTC bought, given a take-profit and a stop-loss, and closed; a scheduled
-    // cancel-all set and cleared; and a nonce spent twice. Every order, child or trigger is worth at
-    // least $11 at its own price.
+    // cancel-all set and cleared, which Hyperliquid refuses until the account has traded enough; and a
+    // nonce spent twice. Every order, child or trigger is worth at least $11 at its own price.
     @Suite(
         "Live order management", .tags(.live),
         .enabled(if: areLiveTestsEnabled, "Set HYPERLIQUID_AGENT_KEY and a valid HYPERLIQUID_ACCOUNT to run"),
@@ -106,9 +106,22 @@ extension HyperliquidKitTests.LiveTradingTests {
             #expect(closed.first?.status == .filled, "\(closed)")
         }
 
+        /// Hyperliquid refuses a scheduled cancel until the account has traded enough volume
+        /// ($1,000,000 when this was written). The refusal still shows the action arrived, signed for
+        /// the account, so it is a known issue rather than a failure.
         @Test func `a scheduled cancel-all is set and cleared`() async throws {
-            try await client.order.scheduleCancelAll(at: .now.addingTimeInterval(60))
-            try await client.order.clearScheduledCancel()
+            try await withKnownIssue(Self.volumeRefusal, isIntermittent: true) {
+                try await client.order.scheduleCancelAll(at: .now.addingTimeInterval(60))
+            } matching: { Self.isVolumeRefusal($0) }
+            try await withKnownIssue(Self.volumeRefusal, isIntermittent: true) {
+                try await client.order.clearScheduledCancel()
+            } matching: { Self.isVolumeRefusal($0) }
+        }
+
+        private static let volumeRefusal: Comment = "Hyperliquid schedules a cancel only once the account has traded enough"
+
+        private static func isVolumeRefusal(_ issue: Issue) -> Bool {
+            (issue.error as? HyperliquidError)?.message?.contains("enough volume traded") == true
         }
 
         @Test func `a spent nonce can't be spent again`() async throws {

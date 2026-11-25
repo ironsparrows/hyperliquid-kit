@@ -122,6 +122,10 @@ extension Hyperliquid {
         /// Cancels all of the account's orders at `deadline`, at least 5 seconds ahead: a dead man's
         /// switch. Hyperliquid triggers it at most 10 times a day. (`scheduleCancel`)
         ///
+        /// Hyperliquid sets one only for an account that has traded enough volume. Until then this
+        /// throws ``HyperliquidError`` with kind `actionRejected`, and a message that names the volume
+        /// required and the volume traded.
+        ///
         /// - Parameters:
         ///   - deadline: When to cancel, at least 5 seconds ahead.
         ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
