@@ -124,8 +124,8 @@ for try await book in client.stream.orderBook("BTC") {
 ```
 
 The account's fills, orders, positions and balances stream the same way, for the client's account.
-Fills, funding payments, the ledger and the TWAP streams yield a ``Hyperliquid/Batch`` per push,
-which marks the snapshot of recent ones that the stream starting a subscription gets first:
+Fills, funding payments, the ledger, and TWAP slice fills and history yield a ``Hyperliquid/Batch``
+per push, which marks the snapshot of recent ones that the stream starting a subscription gets first:
 
 ```swift
 for try await batch in client.stream.fills() where !batch.isSnapshot {

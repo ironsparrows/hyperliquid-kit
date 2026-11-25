@@ -98,8 +98,8 @@ print(closed.first?.averagePrice ?? 0)
 ```
 
 The account's fills, orders, positions and balances stream for the client's account. Fills, funding payments, the
-ledger and the TWAP streams yield a batch per push, which marks the snapshot of recent ones that a new subscription
-gets first:
+ledger, and TWAP slice fills and history yield a batch per push, which marks the snapshot of recent ones that a new
+subscription gets first:
 
 ```swift
 for try await batch in client.stream.fills() where !batch.isSnapshot {
