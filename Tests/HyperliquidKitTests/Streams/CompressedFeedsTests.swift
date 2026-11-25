@@ -1,6 +1,7 @@
 import Foundation
 import HyperliquidKitTestSupport
 import Testing
+
 @testable import HyperliquidKit
 
 extension HyperliquidKitTests {
@@ -28,11 +29,12 @@ extension HyperliquidKitTests {
                 Task { for try await _ in streams.assetContexts() {} },
             ]
             let session = try await transport.session()
-            #expect(Set(try await session.sent(atLeast: 3)) == [
-                #"{"method":"subscribe","subscription":{"type":"l2","c":"BTC","s":5,"m":2}}"#,
-                #"{"method":"subscribe","subscription":{"type":"fastAssetCtxs"}}"#,
-                #"{"method":"subscribe","subscription":{"type":"pac"}}"#,
-            ])
+            #expect(
+                Set(try await session.sent(atLeast: 3)) == [
+                    #"{"method":"subscribe","subscription":{"type":"l2","c":"BTC","s":5,"m":2}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"fastAssetCtxs"}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"pac"}}"#,
+                ])
             for reader in readers { reader.cancel() }
             await connection.disconnect()
         }
@@ -53,11 +55,12 @@ extension HyperliquidKitTests {
             first.cancel()
             _ = try await session.sent(atLeast: 2)
             let next = Task { for try await _ in streams.prices() {} }
-            #expect(try await session.sent(atLeast: 3) == [
-                #"{"method":"subscribe","subscription":{"type":"fastAssetCtxs"}}"#,
-                #"{"method":"unsubscribe","subscription":{"type":"fastAssetCtxs"}}"#,
-                #"{"method":"subscribe","subscription":{"type":"fastAssetCtxs"}}"#,
-            ])
+            #expect(
+                try await session.sent(atLeast: 3) == [
+                    #"{"method":"subscribe","subscription":{"type":"fastAssetCtxs"}}"#,
+                    #"{"method":"unsubscribe","subscription":{"type":"fastAssetCtxs"}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"fastAssetCtxs"}}"#,
+                ])
             next.cancel()
             await connection.disconnect()
         }
@@ -179,11 +182,15 @@ extension HyperliquidKitTests {
         }
 
         @Test func `a diff removes by index into the book as it was, then adds or replaces by price`() throws {
-            var state = OrderBookState(snapshot: .init(
-                coin: "BTC", time: .init(timeIntervalSince1970: 0),
-                bids: [.init(price: 10, size: 1, orderCount: 3), .init(price: 9, size: 1, orderCount: 1), .init(price: 8, size: 1, orderCount: 1)],
-                asks: [.init(price: 11, size: 1, orderCount: 1)]
-            ))
+            var state = OrderBookState(
+                snapshot: .init(
+                    coin: "BTC", time: .init(timeIntervalSince1970: 0),
+                    bids: [
+                        .init(price: 10, size: 1, orderCount: 3), .init(price: 9, size: 1, orderCount: 1),
+                        .init(price: 8, size: 1, orderCount: 1),
+                    ],
+                    asks: [.init(price: 11, size: 1, orderCount: 1)]
+                ))
             let diff = try JSONDecoder().decode(
                 OrderBookDiff.self,
                 from: Data(#"{"c":"BTC","t":5000,"l":[[{"p":"10","s":"2"},{"p":"9.5","s":"4"}],[{"p":"12","s":"3"}]],"r":[[1,2],[]]}"#.utf8)
@@ -245,12 +252,14 @@ extension HyperliquidKitTests {
                 merged = try #require(try await contexts.next())
             }
             #expect(merged["cash:CAR"] != nil)
-            #expect(merged["BTC"] == .init(
-                markPrice: 60207, midPrice: Decimal(string: "60198.5"), oraclePrice: 60239, previousDayPrice: 61236,
-                funding: Decimal(string: "0.0000002258")!, premium: nil, openInterest: Decimal(string: "37551.6997999999")!,
-                dayNotionalVolume: Decimal(string: "4748772806.7526988983")!, dayBaseVolume: Decimal(string: "76612.8752499998"),
-                impactBidPrice: nil, impactAskPrice: nil
-            ))
+            #expect(
+                merged["BTC"]
+                    == .init(
+                        markPrice: 60207, midPrice: Decimal(string: "60198.5"), oraclePrice: 60239, previousDayPrice: 61236,
+                        funding: Decimal(string: "0.0000002258")!, premium: nil, openInterest: Decimal(string: "37551.6997999999")!,
+                        dayNotionalVolume: Decimal(string: "4748772806.7526988983")!, dayBaseVolume: Decimal(string: "76612.8752499998"),
+                        impactBidPrice: nil, impactAskPrice: nil
+                    ))
             await connection.disconnect()
         }
 

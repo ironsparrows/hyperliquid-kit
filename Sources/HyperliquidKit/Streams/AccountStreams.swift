@@ -11,100 +11,126 @@ struct AccountStreams: Sendable {
     // MARK: Account
 
     func orderUpdates(for user: Hyperliquid.Address?) -> AsyncThrowingStream<Hyperliquid.HistoricalOrder, any Error> {
-        stream(for: user, { .userless("orderUpdates", channel: "orderUpdates", $0) }, buffering: .all, decodeEach: { data in
-            try StreamConnection.payload([Hyperliquid.HistoricalOrder].self, of: data)
-        })
+        stream(
+            for: user, { .userless("orderUpdates", channel: "orderUpdates", $0) }, buffering: .all,
+            decodeEach: { data in
+                try StreamConnection.payload([Hyperliquid.HistoricalOrder].self, of: data)
+            })
     }
 
     func fills(aggregateByTime: Bool, for user: Hyperliquid.Address?)
         -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.Fill>, any Error>
     {
-        stream(for: user, { .fills($0, aggregateByTime: aggregateByTime) }, buffering: .all, decodeEach: { data in
-            [try StreamConnection.payload(BatchPush<Hyperliquid.Fill, Fills>.self, of: data).batch]
-        })
+        stream(
+            for: user, { .fills($0, aggregateByTime: aggregateByTime) }, buffering: .all,
+            decodeEach: { data in
+                [try StreamConnection.payload(BatchPush<Hyperliquid.Fill, Fills>.self, of: data).batch]
+            })
     }
 
     func events(for user: Hyperliquid.Address?) -> AsyncThrowingStream<Hyperliquid.UserEvent, any Error> {
         // Events arrive on channel `user`.
-        stream(for: user, { .userless("userEvents", channel: "user", $0) }, buffering: .all, decodeEach: { data in
-            try StreamConnection.payload(EventsPush.self, of: data).events
-        })
+        stream(
+            for: user, { .userless("userEvents", channel: "user", $0) }, buffering: .all,
+            decodeEach: { data in
+                try StreamConnection.payload(EventsPush.self, of: data).events
+            })
     }
 
     func fundingPayments(for user: Hyperliquid.Address?)
         -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.FundingPayment>, any Error>
     {
-        stream(for: user, { .user("userFundings", $0) }, buffering: .all, decodeEach: { data in
-            [try StreamConnection.payload(BatchPush<Hyperliquid.FundingPayment, Fundings>.self, of: data).batch]
-        })
+        stream(
+            for: user, { .user("userFundings", $0) }, buffering: .all,
+            decodeEach: { data in
+                [try StreamConnection.payload(BatchPush<Hyperliquid.FundingPayment, Fundings>.self, of: data).batch]
+            })
     }
 
     func ledger(for user: Hyperliquid.Address?)
         -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.LedgerUpdate>, any Error>
     {
-        stream(for: user, { .user("userNonFundingLedgerUpdates", $0) }, buffering: .all, decodeEach: { data in
-            [try StreamConnection.payload(BatchPush<Hyperliquid.LedgerUpdate, LedgerUpdates>.self, of: data).batch]
-        })
+        stream(
+            for: user, { .user("userNonFundingLedgerUpdates", $0) }, buffering: .all,
+            decodeEach: { data in
+                [try StreamConnection.payload(BatchPush<Hyperliquid.LedgerUpdate, LedgerUpdates>.self, of: data).batch]
+            })
     }
 
     func perpetualState(dex: Hyperliquid.PerpDex, for user: Hyperliquid.Address?)
         -> AsyncThrowingStream<Hyperliquid.PerpetualState, any Error>
     {
-        stream(for: user, { .userOnDex("clearinghouseState", $0, dex: dex) }, buffering: .latest, decodeEach: { data in
-            [try StreamConnection.payload(PerpetualStatePush.self, of: data).clearinghouseState]
-        })
+        stream(
+            for: user, { .userOnDex("clearinghouseState", $0, dex: dex) }, buffering: .latest,
+            decodeEach: { data in
+                [try StreamConnection.payload(PerpetualStatePush.self, of: data).clearinghouseState]
+            })
     }
 
     func pendingOrders(dex: Hyperliquid.PerpDex, for user: Hyperliquid.Address?)
         -> AsyncThrowingStream<[Hyperliquid.Order], any Error>
     {
-        stream(for: user, { .userOnDex("openOrders", $0, dex: dex) }, buffering: .latest, decodeEach: { data in
-            [try StreamConnection.payload(PendingOrdersPush.self, of: data).orders]
-        })
+        stream(
+            for: user, { .userOnDex("openOrders", $0, dex: dex) }, buffering: .latest,
+            decodeEach: { data in
+                [try StreamConnection.payload(PendingOrdersPush.self, of: data).orders]
+            })
     }
 
     func tradingLimits(_ coin: Hyperliquid.Coin, for user: Hyperliquid.Address?)
         -> AsyncThrowingStream<Hyperliquid.TradingLimits, any Error>
     {
-        stream(for: user, { .activeAssetData(coin, $0) }, buffering: .latest, decodeEach: { data in
-            [try StreamConnection.payload(Hyperliquid.TradingLimits.self, of: data)]
-        })
+        stream(
+            for: user, { .activeAssetData(coin, $0) }, buffering: .latest,
+            decodeEach: { data in
+                [try StreamConnection.payload(Hyperliquid.TradingLimits.self, of: data)]
+            })
     }
 
     func balances(for user: Hyperliquid.Address?) -> AsyncThrowingStream<[Hyperliquid.Balance], any Error> {
-        stream(for: user, { .user("spotState", $0) }, buffering: .latest, decodeEach: { data in
-            [try StreamConnection.payload(BalancesPush.self, of: data).spotState.balances]
-        })
+        stream(
+            for: user, { .user("spotState", $0) }, buffering: .latest,
+            decodeEach: { data in
+                [try StreamConnection.payload(BalancesPush.self, of: data).spotState.balances]
+            })
     }
 
     func notifications(for user: Hyperliquid.Address?) -> AsyncThrowingStream<String, any Error> {
-        stream(for: user, { .userless("notification", channel: "notification", $0) }, buffering: .all, decodeEach: { data in
-            [try StreamConnection.payload(NotificationPush.self, of: data).notification]
-        })
+        stream(
+            for: user, { .userless("notification", channel: "notification", $0) }, buffering: .all,
+            decodeEach: { data in
+                [try StreamConnection.payload(NotificationPush.self, of: data).notification]
+            })
     }
 
     func twapStates(dex: Hyperliquid.PerpDex, for user: Hyperliquid.Address?)
         -> AsyncThrowingStream<[Hyperliquid.TwapID: Hyperliquid.Twap], any Error>
     {
-        stream(for: user, { .userOnDex("twapStates", $0, dex: dex) }, buffering: .latest, decodeEach: { data in
-            [try StreamConnection.payload(TwapStatesPush.self, of: data).states]
-        })
+        stream(
+            for: user, { .userOnDex("twapStates", $0, dex: dex) }, buffering: .latest,
+            decodeEach: { data in
+                [try StreamConnection.payload(TwapStatesPush.self, of: data).states]
+            })
     }
 
     func twapSliceFills(for user: Hyperliquid.Address?)
         -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.TwapSliceFill>, any Error>
     {
-        stream(for: user, { .user("userTwapSliceFills", $0) }, buffering: .all, decodeEach: { data in
-            [try StreamConnection.payload(BatchPush<Hyperliquid.TwapSliceFill, TwapSliceFills>.self, of: data).batch]
-        })
+        stream(
+            for: user, { .user("userTwapSliceFills", $0) }, buffering: .all,
+            decodeEach: { data in
+                [try StreamConnection.payload(BatchPush<Hyperliquid.TwapSliceFill, TwapSliceFills>.self, of: data).batch]
+            })
     }
 
     func twapHistory(for user: Hyperliquid.Address?)
         -> AsyncThrowingStream<Hyperliquid.Batch<Hyperliquid.TwapHistoryEntry>, any Error>
     {
-        stream(for: user, { .user("userTwapHistory", $0) }, buffering: .all, decodeEach: { data in
-            [try StreamConnection.payload(BatchPush<Hyperliquid.TwapHistoryEntry, TwapHistory>.self, of: data).batch]
-        })
+        stream(
+            for: user, { .user("userTwapHistory", $0) }, buffering: .all,
+            decodeEach: { data in
+                [try StreamConnection.payload(BatchPush<Hyperliquid.TwapHistoryEntry, TwapHistory>.self, of: data).batch]
+            })
     }
 
     // MARK: Subscribing

@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import HyperliquidKit
 
 extension HyperliquidKitTests {
@@ -55,21 +56,22 @@ extension HyperliquidKitTests {
             let session = try await transport.session()
             let sent = Set(try await session.sent(atLeast: 13))
             let user = #""user":"0x0000000000000000000000000000000000000001""#
-            #expect(sent == [
-                #"{"method":"subscribe","subscription":{"type":"orderUpdates",\#(user)}}"#,
-                #"{"method":"subscribe","subscription":{"type":"userFills",\#(user)}}"#,
-                #"{"method":"subscribe","subscription":{"type":"userEvents",\#(user)}}"#,
-                #"{"method":"subscribe","subscription":{"type":"userFundings",\#(user)}}"#,
-                #"{"method":"subscribe","subscription":{"type":"userNonFundingLedgerUpdates",\#(user)}}"#,
-                #"{"method":"subscribe","subscription":{"type":"clearinghouseState",\#(user),"dex":""}}"#,
-                #"{"method":"subscribe","subscription":{"type":"openOrders",\#(user),"dex":""}}"#,
-                #"{"method":"subscribe","subscription":{"type":"activeAssetData",\#(user),"coin":"BTC"}}"#,
-                #"{"method":"subscribe","subscription":{"type":"spotState",\#(user)}}"#,
-                #"{"method":"subscribe","subscription":{"type":"notification",\#(user)}}"#,
-                #"{"method":"subscribe","subscription":{"type":"twapStates",\#(user),"dex":""}}"#,
-                #"{"method":"subscribe","subscription":{"type":"userTwapSliceFills",\#(user)}}"#,
-                #"{"method":"subscribe","subscription":{"type":"userTwapHistory",\#(user)}}"#,
-            ])
+            #expect(
+                sent == [
+                    #"{"method":"subscribe","subscription":{"type":"orderUpdates",\#(user)}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"userFills",\#(user)}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"userEvents",\#(user)}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"userFundings",\#(user)}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"userNonFundingLedgerUpdates",\#(user)}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"clearinghouseState",\#(user),"dex":""}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"openOrders",\#(user),"dex":""}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"activeAssetData",\#(user),"coin":"BTC"}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"spotState",\#(user)}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"notification",\#(user)}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"twapStates",\#(user),"dex":""}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"userTwapSliceFills",\#(user)}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"userTwapHistory",\#(user)}}"#,
+                ])
             for reader in readers { reader.cancel() }
             await connection.disconnect()
         }
@@ -83,10 +85,11 @@ extension HyperliquidKitTests {
             ]
             let session = try await transport.session()
             let sent = Set(try await session.sent(atLeast: 2))
-            #expect(sent == [
-                #"{"method":"subscribe","subscription":{"type":"userFills","user":"0x00000000000000000000000000000000000000a2","aggregateByTime":true}}"#,
-                #"{"method":"subscribe","subscription":{"type":"clearinghouseState","user":"0x00000000000000000000000000000000000000a2","dex":"xyz"}}"#,
-            ])
+            #expect(
+                sent == [
+                    #"{"method":"subscribe","subscription":{"type":"userFills","user":"0x00000000000000000000000000000000000000a2","aggregateByTime":true}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"clearinghouseState","user":"0x00000000000000000000000000000000000000a2","dex":"xyz"}}"#,
+                ])
             for reader in readers { reader.cancel() }
             await connection.disconnect()
         }
@@ -199,8 +202,12 @@ extension HyperliquidKitTests {
             first.cancel()
             _ = await first.result
             let second = Task { for try await _ in streams.fills() {} }
-            let subscribe = #"{"method":"subscribe","subscription":{"type":"userFills","user":"0x0000000000000000000000000000000000000001"}}"#
-            #expect(try await session.sent(atLeast: 3) == [subscribe, subscribe.replacingOccurrences(of: "subscribe", with: "unsubscribe"), subscribe])
+            let subscribe =
+                #"{"method":"subscribe","subscription":{"type":"userFills","user":"0x0000000000000000000000000000000000000001"}}"#
+            #expect(
+                try await session.sent(atLeast: 3) == [
+                    subscribe, subscribe.replacingOccurrences(of: "subscribe", with: "unsubscribe"), subscribe,
+                ])
             second.cancel()
             await connection.disconnect()
         }
@@ -233,9 +240,10 @@ extension HyperliquidKitTests {
             let reader = Task { for try await _ in client.stream.balances() {} }
             let session = try await transport.session()
             let expected = hasVault ? vault : Self.account
-            #expect(try await session.sent(atLeast: 1) == [
-                #"{"method":"subscribe","subscription":{"type":"spotState","user":"\#(expected)"}}"#
-            ])
+            #expect(
+                try await session.sent(atLeast: 1) == [
+                    #"{"method":"subscribe","subscription":{"type":"spotState","user":"\#(expected)"}}"#
+                ])
             reader.cancel()
             await client.stream.disconnect()
         }
@@ -366,13 +374,22 @@ extension HyperliquidKitTests {
             (#"{"channel":"orderUpdates","data":[]}"#, "orderUpdates", ""),
             (#"{"channel":"user","data":{"fills":[]}}"#, "user", ""),
             (#"{"channel":"notification","data":{"notification":"x"}}"#, "notification", ""),
-            (#"{"channel":"userFills","data":{"user":"0x00000000000000000000000000000000000000A2","fills":[]}}"#, "userFills", "0x00000000000000000000000000000000000000a2"),
+            (
+                #"{"channel":"userFills","data":{"user":"0x00000000000000000000000000000000000000A2","fills":[]}}"#, "userFills",
+                "0x00000000000000000000000000000000000000a2"
+            ),
             (#"{"channel":"userFundings","data":{"isSnapshot":true,"user":"0xab","fundings":[]}}"#, "userFundings", "0xab"),
-            (#"{"channel":"userNonFundingLedgerUpdates","data":{"user":"0xab","nonFundingLedgerUpdates":[]}}"#, "userNonFundingLedgerUpdates", "0xab"),
+            (
+                #"{"channel":"userNonFundingLedgerUpdates","data":{"user":"0xab","nonFundingLedgerUpdates":[]}}"#,
+                "userNonFundingLedgerUpdates", "0xab"
+            ),
             (#"{"channel":"userTwapSliceFills","data":{"user":"0xab","twapSliceFills":[]}}"#, "userTwapSliceFills", "0xab"),
             (#"{"channel":"userTwapHistory","data":{"user":"0xab","history":[]}}"#, "userTwapHistory", "0xab"),
             (#"{"channel":"spotState","data":{"user":"0xab","spotState":{"balances":[]}}}"#, "spotState", "0xab"),
-            (#"{"channel":"clearinghouseState","data":{"dex":"xyz","user":"0xab","clearinghouseState":{}}}"#, "clearinghouseState", "0xab,xyz"),
+            (
+                #"{"channel":"clearinghouseState","data":{"dex":"xyz","user":"0xab","clearinghouseState":{}}}"#, "clearinghouseState",
+                "0xab,xyz"
+            ),
             (#"{"channel":"openOrders","data":{"dex":"","user":"0xab","orders":[]}}"#, "openOrders", "0xab,"),
             (#"{"channel":"twapStates","data":{"dex":"","user":"0xab","states":[]}}"#, "twapStates", "0xab,"),
             (#"{"channel":"activeAssetData","data":{"user":"0xab","coin":"BTC"}}"#, "activeAssetData", "BTC,0xab"),

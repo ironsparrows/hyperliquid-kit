@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import HyperliquidKit
 
 extension HyperliquidKitTests {
@@ -7,7 +8,8 @@ extension HyperliquidKitTests {
     struct MarketOrderTests {
         private static let meta = #"{"universe":[{"name":"BTC","szDecimals":5},{"name":"ETH","szDecimals":4}]}"#
         private static let mids = #"{"BTC":"60243.5","ETH":"2014.35"}"#
-        private static let filled = #"{"status":"ok","response":{"type":"order","data":{"statuses":[{"filled":{"totalSz":"0.5","avgPx":"60250.0","oid":3}}]}}}"#
+        private static let filled =
+            #"{"status":"ok","response":{"type":"order","data":{"statuses":[{"filled":{"totalSz":"0.5","avgPx":"60250.0","oid":3}}]}}}"#
 
         private static func transport(_ answers: String...) -> FakeTransport {
             FakeTransport(responses: answers.map { TransportResponse(status: 200, body: Data($0.utf8)) })
@@ -39,7 +41,7 @@ extension HyperliquidKitTests {
         @Test func `an explicit price replaces the mid`() async throws {
             let transport = Self.transport(Self.meta, Self.filled)
             _ = try await OrderEndpoints.test(transport).place([
-                .market(.sell, "ETH", size: 1, price: Decimal(string: "2014.35")!, slippage: .percent(5)),
+                .market(.sell, "ETH", size: 1, price: Decimal(string: "2014.35")!, slippage: .percent(5))
             ])
             #expect(await transport.requests.count == 2)
             #expect(try await Self.orderBody(transport).contains(#""a":1,"b":false,"p":"1913.6","#))
@@ -87,7 +89,8 @@ extension HyperliquidKitTests {
         }
 
         @Test func `closing without a position sends nothing and returns no results`() async throws {
-            let empty = #"{"marginSummary":{"accountValue":"1","totalNtlPos":"0","totalRawUsd":"1","totalMarginUsed":"0"},"crossMarginSummary":{"accountValue":"1","totalNtlPos":"0","totalRawUsd":"1","totalMarginUsed":"0"},"withdrawable":"1","assetPositions":[]}"#
+            let empty =
+                #"{"marginSummary":{"accountValue":"1","totalNtlPos":"0","totalRawUsd":"1","totalMarginUsed":"0"},"crossMarginSummary":{"accountValue":"1","totalNtlPos":"0","totalRawUsd":"1","totalMarginUsed":"0"},"withdrawable":"1","assetPositions":[]}"#
             let transport = Self.transport(Self.meta, empty)
             let results = try await OrderEndpoints.test(transport, account: "0x0000000000000000000000000000000000000001")
                 .close("BTC")

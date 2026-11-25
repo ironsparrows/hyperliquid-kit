@@ -35,10 +35,11 @@ extension [UInt8] {
 
 /// `0x` and the bytes as lower-case hexadecimal digits, two per byte.
 package func hexadecimal(_ bytes: some Sequence<UInt8>) -> String {
-    "0x" + bytes.map { byte in
-        let digits = String(byte, radix: 16)
-        return byte < 0x10 ? "0" + digits : digits
-    }.joined()
+    "0x"
+        + bytes.map { byte in
+            let digits = String(byte, radix: 16)
+            return byte < 0x10 ? "0" + digits : digits
+        }.joined()
 }
 
 private func nibble(_ character: UInt8) -> UInt8? {

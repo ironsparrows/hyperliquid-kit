@@ -34,7 +34,7 @@ extension HyperliquidKitTests.LiveTradingTests {
             let size = try await HyperliquidKitTests.LiveTradingTests.btcSize(worth: 11, at: price, on: client)
 
             let placed = try await client.order.place([
-                .limit(.buy, "BTC", price: price, size: size, timeInForce: .addLiquidityOnly, clientID: clientID),
+                .limit(.buy, "BTC", price: price, size: size, timeInForce: .addLiquidityOnly, clientID: clientID)
             ])
             #expect(placed.first?.status == .resting, "\(placed)")
             #expect(try await client.order.status(.clientID(clientID))?.status == .open)
@@ -42,7 +42,9 @@ extension HyperliquidKitTests.LiveTradingTests {
             let lower = try await self.price(times: Decimal(string: "0.89")!)
             let newClientID = Hyperliquid.ClientOrderID.random()
             let modified = try await client.order.modify([
-                .init(.clientID(clientID), to: .limit(.buy, "BTC", price: lower, size: size, timeInForce: .addLiquidityOnly, clientID: newClientID)),
+                .init(
+                    .clientID(clientID),
+                    to: .limit(.buy, "BTC", price: lower, size: size, timeInForce: .addLiquidityOnly, clientID: newClientID))
             ])
             #expect(modified.first?.status == .resting, "\(modified)")
 
@@ -62,8 +64,12 @@ extension HyperliquidKitTests.LiveTradingTests {
             let placed = try await client.order.place(
                 [
                     .limit(.buy, "BTC", price: price, size: size, timeInForce: .addLiquidityOnly),
-                    .trigger(.sell, "BTC", .takeProfit, triggerPrice: takeProfit, size: size, execution: .limit(price: takeProfit), clientID: children[0]),
-                    .trigger(.sell, "BTC", .stopLoss, triggerPrice: stopLoss, size: size, execution: .limit(price: stopLoss), clientID: children[1]),
+                    .trigger(
+                        .sell, "BTC", .takeProfit, triggerPrice: takeProfit, size: size, execution: .limit(price: takeProfit),
+                        clientID: children[0]),
+                    .trigger(
+                        .sell, "BTC", .stopLoss, triggerPrice: stopLoss, size: size, execution: .limit(price: stopLoss),
+                        clientID: children[1]),
                 ],
                 grouping: .normalTakeProfitStopLoss
             )
@@ -76,9 +82,10 @@ extension HyperliquidKitTests.LiveTradingTests {
             let canceled = try await client.order.cancel([.init(parent, coin: "BTC")])
             #expect(canceled.first?.isCanceled == true, "\(canceled)")
             let pending = try await client.order.pendingDetailed()
-            #expect(!pending.contains {
-                $0.id == parent || childIDs.contains($0.id) || $0.clientID.map(children.contains) == true
-            })
+            #expect(
+                !pending.contains {
+                    $0.id == parent || childIDs.contains($0.id) || $0.clientID.map(children.contains) == true
+                })
         }
 
         @Test func `a take-profit and a stop-loss rest on a position and are canceled before it closes`() async throws {
@@ -93,8 +100,12 @@ extension HyperliquidKitTests.LiveTradingTests {
             let triggers = [Hyperliquid.ClientOrderID.random(), .random()]
             let placed = try await client.order.place(
                 [
-                    .trigger(.sell, "BTC", .takeProfit, triggerPrice: takeProfit, size: filled, execution: .market(limitPrice: takeProfitLimit), clientID: triggers[0]),
-                    .trigger(.sell, "BTC", .stopLoss, triggerPrice: stopLoss, size: filled, execution: .market(limitPrice: stopLoss), clientID: triggers[1]),
+                    .trigger(
+                        .sell, "BTC", .takeProfit, triggerPrice: takeProfit, size: filled, execution: .market(limitPrice: takeProfitLimit),
+                        clientID: triggers[0]),
+                    .trigger(
+                        .sell, "BTC", .stopLoss, triggerPrice: stopLoss, size: filled, execution: .market(limitPrice: stopLoss),
+                        clientID: triggers[1]),
                 ],
                 grouping: .positionTakeProfitStopLoss
             )
@@ -112,10 +123,14 @@ extension HyperliquidKitTests.LiveTradingTests {
         @Test func `a scheduled cancel-all is set and cleared`() async throws {
             try await withKnownIssue(Self.volumeRefusal, isIntermittent: true) {
                 try await client.order.scheduleCancelAll(at: .now.addingTimeInterval(60))
-            } matching: { Self.isVolumeRefusal($0) }
+            } matching: {
+                Self.isVolumeRefusal($0)
+            }
             try await withKnownIssue(Self.volumeRefusal, isIntermittent: true) {
                 try await client.order.clearScheduledCancel()
-            } matching: { Self.isVolumeRefusal($0) }
+            } matching: {
+                Self.isVolumeRefusal($0)
+            }
         }
 
         private static let volumeRefusal: Comment = "Hyperliquid schedules a cancel only once the account has traded enough"

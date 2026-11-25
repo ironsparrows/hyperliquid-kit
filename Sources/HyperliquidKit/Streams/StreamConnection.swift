@@ -391,10 +391,11 @@ actor StreamConnection {
 
     private func receive(_ data: Data, for destination: StreamRouter.Destination, on id: UInt64) {
         guard connection?.id == id else { return }
-        let topics = switch destination {
-        case .topic(let topic): [topic]
-        case .channel(let channel): subscribers.keys.filter { $0.channel == channel }
-        }
+        let topics =
+            switch destination {
+            case .topic(let topic): [topic]
+            case .channel(let channel): subscribers.keys.filter { $0.channel == channel }
+            }
         for topic in topics {
             for id in subscribers[topic] ?? [] { consumers[id]?.deliver(data) }
         }

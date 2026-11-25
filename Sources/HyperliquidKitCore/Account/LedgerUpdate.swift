@@ -183,19 +183,21 @@ extension Hyperliquid.LedgerUpdate.Change: Decodable {
         case "vaultDistribution":
             self = .vaultDistribution(vault: try address(.vault), usdc: try decimal(.usdc))
         case "vaultWithdraw":
-            self = .vaultWithdraw(.init(
-                vault: try address(.vault), user: try address(.user), requestedUSD: try decimal(.requestedUsd),
-                commission: try decimal(.commission), closingCost: try decimal(.closingCost), basis: try decimal(.basis),
-                netWithdrawnUSD: try decimal(.netWithdrawnUsd)
-            ))
+            self = .vaultWithdraw(
+                .init(
+                    vault: try address(.vault), user: try address(.user), requestedUSD: try decimal(.requestedUsd),
+                    commission: try decimal(.commission), closingCost: try decimal(.closingCost), basis: try decimal(.basis),
+                    netWithdrawnUSD: try decimal(.netWithdrawnUsd)
+                ))
         case "vaultLeaderCommission":
             self = .vaultLeaderCommission(user: try address(.user), usdc: try decimal(.usdc))
         case "spotTransfer":
-            self = .spotTransfer(.init(
-                token: try container.decode(String.self, forKey: .token), amount: try decimal(.amount),
-                usdcValue: try decimal(.usdcValue), user: try address(.user), destination: try address(.destination),
-                fee: try decimal(.fee)
-            ))
+            self = .spotTransfer(
+                .init(
+                    token: try container.decode(String.self, forKey: .token), amount: try decimal(.amount),
+                    usdcValue: try decimal(.usdcValue), user: try address(.user), destination: try address(.destination),
+                    fee: try decimal(.fee)
+                ))
         case "accountClassTransfer":
             self = .accountClassTransfer(usdc: try decimal(.usdc), toPerp: try container.decode(Bool.self, forKey: .toPerp))
         case "spotGenesis":

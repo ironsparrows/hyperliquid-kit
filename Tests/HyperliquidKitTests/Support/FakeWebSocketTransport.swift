@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import HyperliquidKit
 
 /// Opens scripted connections and records them, in order.

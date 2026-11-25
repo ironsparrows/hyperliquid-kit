@@ -1,6 +1,7 @@
 import AsyncHTTPClient
 import NIOCore
 import Testing
+
 @testable import HyperliquidKit
 
 extension HyperliquidKitTests {
@@ -18,7 +19,9 @@ extension HyperliquidKitTests {
         @Test func `other failures become connection failed`() {
             let mapped = AsyncHTTPClientTransport.clientError(for: HTTPClientError.remoteConnectionClosed)
             #expect((mapped as? Hyperliquid.ClientError)?.reason == .connectionFailed)
-            #expect(((AsyncHTTPClientTransport.clientError(for: NIOTooManyBytesError(maxBytes: 1))) as? Hyperliquid.ClientError)?.reason == .connectionFailed)
+            #expect(
+                ((AsyncHTTPClientTransport.clientError(for: NIOTooManyBytesError(maxBytes: 1))) as? Hyperliquid.ClientError)?.reason
+                    == .connectionFailed)
         }
 
         @Test func `cancellation passes through`() {

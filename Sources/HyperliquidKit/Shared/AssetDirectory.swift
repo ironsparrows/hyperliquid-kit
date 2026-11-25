@@ -53,14 +53,16 @@ actor AssetDirectory {
     }
 
     private func universe(of dex: Hyperliquid.PerpDex) async throws -> Universe {
-        let task = universes[dex] ?? Task { [info] in
-            let entries = try await info.send(InfoRequest<AssetMetadata>("meta", [.init(key: "dex", value: .string(dex.name))]))
-                .universe
-            return Universe(
-                entries: entries,
-                positions: Dictionary(entries.enumerated().map { ($1.name, $0) }) { _, last in last }
-            )
-        }
+        let task =
+            universes[dex]
+            ?? Task { [info] in
+                let entries = try await info.send(InfoRequest<AssetMetadata>("meta", [.init(key: "dex", value: .string(dex.name))]))
+                    .universe
+                return Universe(
+                    entries: entries,
+                    positions: Dictionary(entries.enumerated().map { ($1.name, $0) }) { _, last in last }
+                )
+            }
         universes[dex] = task
         do {
             return try await task.valueUnlessCancelled
@@ -74,12 +76,14 @@ actor AssetDirectory {
     }
 
     private func offset(of dex: Hyperliquid.PerpDex) async throws -> Int {
-        let task = dexIndexes ?? Task { [info] in
-            let names = try await info.send(InfoRequest<[PerpDexName?]>("perpDexs"))
-            return Dictionary(
-                names.enumerated().compactMap { index, entry in entry.map { (.named($0.name), index) } }
-            ) { first, _ in first }
-        }
+        let task =
+            dexIndexes
+            ?? Task { [info] in
+                let names = try await info.send(InfoRequest<[PerpDexName?]>("perpDexs"))
+                return Dictionary(
+                    names.enumerated().compactMap { index, entry in entry.map { (.named($0.name), index) } }
+                ) { first, _ in first }
+            }
         dexIndexes = task
         let indexes: [Hyperliquid.PerpDex: Int]
         do {

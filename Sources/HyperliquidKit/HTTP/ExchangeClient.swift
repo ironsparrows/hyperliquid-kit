@@ -82,11 +82,12 @@ struct ExchangeClient: Sendable {
     ) async throws -> (Response?, Answer) {
         // 1. The signer, and the nonce it signs with.
         let signer = try requireSigner()
-        let nonce = if let nonce {
-            await nonces.record(nonce, for: signer.address, on: network)
-        } else {
-            await nonces.next(for: signer.address, on: network)
-        }
+        let nonce =
+            if let nonce {
+                await nonces.record(nonce, for: signer.address, on: network)
+            } else {
+                await nonces.next(for: signer.address, on: network)
+            }
         let expiresAfter = expiresAfter.map(milliseconds)
         // 2. Sign the action with what Hyperliquid hashes beside it.
         let l1Action = L1Action(action: action, nonce: nonce, vault: vault, expiresAfter: expiresAfter)

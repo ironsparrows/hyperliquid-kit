@@ -9,7 +9,7 @@ extension HyperliquidKitCoreTests {
             let json = "[610655084237,18446744073709551615]"
             #expect(try roundTrip(Hyperliquid.OrderID.self, json) == json)
             #expect(try roundTrip(Hyperliquid.TwapID.self, json) == json)
-            #expect("\(Hyperliquid.OrderID(rawValue: 610655084237))" == "610655084237")
+            #expect("\(Hyperliquid.OrderID(rawValue: 610_655_084_237))" == "610655084237")
         }
 
         @Test func `a transaction hash round-trips unchanged`() throws {
@@ -21,8 +21,9 @@ extension HyperliquidKitCoreTests {
             let text = "0x1234567890ABCDEF1234567890ABCDEF"
             let id = try Hyperliquid.ClientOrderID(text)
             #expect("\(id)" == "0x1234567890abcdef1234567890abcdef")
-            #expect(try roundTrip(Hyperliquid.ClientOrderID.self, #"["0x1234567890ABCDEF1234567890ABCDEF"]"#)
-                == #"["0x1234567890abcdef1234567890abcdef"]"#)
+            #expect(
+                try roundTrip(Hyperliquid.ClientOrderID.self, #"["0x1234567890ABCDEF1234567890ABCDEF"]"#)
+                    == #"["0x1234567890abcdef1234567890abcdef"]"#)
         }
 
         @Test(arguments: [

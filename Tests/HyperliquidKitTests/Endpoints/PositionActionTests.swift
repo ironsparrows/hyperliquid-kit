@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import HyperliquidKit
 
 extension HyperliquidKitTests {
@@ -110,11 +111,13 @@ extension HyperliquidKitTests {
 
         @Test func `canceling a TWAP sends the asset and the TWAP ID`() async throws {
             let success = #"{"status":"ok","response":{"type":"twapCancel","data":{"status":"success"}}}"#
-            let failure = #"{"status":"ok","response":{"type":"twapCancel","data":{"status":{"error":"TWAP was never placed, already canceled, or filled."}}}}"#
+            let failure =
+                #"{"status":"ok","response":{"type":"twapCancel","data":{"status":{"error":"TWAP was never placed, already canceled, or filled."}}}}"#
             let transport = Self.transport(Self.meta, success, failure)
             let twap = TwapEndpoints.test(transport)
             #expect(try await twap.cancel(.init(rawValue: 3156), coin: "ETH").isCanceled)
-            #expect(try await twap.cancel(.init(rawValue: 3156), coin: "ETH").error == "TWAP was never placed, already canceled, or filled.")
+            #expect(
+                try await twap.cancel(.init(rawValue: 3156), coin: "ETH").error == "TWAP was never placed, already canceled, or filled.")
             #expect(try await Self.action(transport) == #"{"type":"twapCancel","a":1,"t":3156}"#)
         }
 

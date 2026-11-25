@@ -1,15 +1,19 @@
 import Foundation
 import Testing
+
 @testable import HyperliquidKit
 
 extension HyperliquidKitTests {
     @Suite("Market endpoints")
     struct MarketEndpointsTests {
-        private static let btcMeta = #"{"universe":[{"name":"BTC","szDecimals":5,"maxLeverage":40,"marginTableId":40}],"marginTables":[],"collateralToken":0}"#
-        private static let xyzMeta = #"{"universe":[{"name":"xyz:XYZ100","szDecimals":4,"maxLeverage":30,"marginTableId":30}],"marginTables":[],"collateralToken":0}"#
+        private static let btcMeta =
+            #"{"universe":[{"name":"BTC","szDecimals":5,"maxLeverage":40,"marginTableId":40}],"marginTables":[],"collateralToken":0}"#
+        private static let xyzMeta =
+            #"{"universe":[{"name":"xyz:XYZ100","szDecimals":4,"maxLeverage":30,"marginTableId":30}],"marginTables":[],"collateralToken":0}"#
         private static let perpDexs = #"[null,{"name":"xyz","fullName":"XYZ","deployer":"0x88806a71d74ad0a510b350545c9ae490912f0888"}]"#
         private static let ethMeta = #"{"universe":[{"name":"ETH","szDecimals":4,"maxLeverage":25,"marginTableId":25}],"marginTables":[]}"#
-        private static let context = #"{"funding":"0.0000125","openInterest":"688.11","prevDayPx":"15.322","dayNtlVlm":"1169046.29406","premium":null,"oraclePx":"14.32","markPx":"14.3161","midPx":null,"impactPxs":null,"dayBaseVlm":"81000.5"}"#
+        private static let context =
+            #"{"funding":"0.0000125","openInterest":"688.11","prevDayPx":"15.322","dayNtlVlm":"1169046.29406","premium":null,"oraclePx":"14.32","markPx":"14.3161","midPx":null,"impactPxs":null,"dayBaseVlm":"81000.5"}"#
 
         @Test func `perpetuals read the perp DEX's meta`() async throws {
             let transport = FakeTransport(json: Self.btcMeta)
@@ -46,7 +50,8 @@ extension HyperliquidKitTests {
 
         @Test func `perp DEXs leave out the first perp DEX's null`() async throws {
             let transport = FakeTransport(
-                json: #"[null,{"name":"xyz","fullName":"XYZ","deployer":"0x88806a71d74ad0a510b350545c9ae490912f0888","oracleUpdater":null,"feeRecipient":null,"assetToStreamingOiCap":[["xyz:XYZ100","25000000.0"]]}]"#
+                json:
+                    #"[null,{"name":"xyz","fullName":"XYZ","deployer":"0x88806a71d74ad0a510b350545c9ae490912f0888","oracleUpdater":null,"feeRecipient":null,"assetToStreamingOiCap":[["xyz:XYZ100","25000000.0"]]}]"#
             )
             let dexes = try await Self.market(transport).perpDexs()
             #expect(dexes.map(\.dex) == [.named("xyz")])
@@ -72,12 +77,13 @@ extension HyperliquidKitTests {
             _ = try await market.orderBook("BTC", precision: .significantFigures(.three))
             #expect(full.bids.map(\.price) == [Decimal(59660)])
             #expect(full.asks.isEmpty)
-            #expect(await transport.bodies == [
-                #"{"type":"meta","dex":""}"#,
-                #"{"type":"l2Book","coin":"BTC"}"#,
-                #"{"type":"l2Book","coin":"BTC","nSigFigs":5,"mantissa":2}"#,
-                #"{"type":"l2Book","coin":"BTC","nSigFigs":3}"#,
-            ])
+            #expect(
+                await transport.bodies == [
+                    #"{"type":"meta","dex":""}"#,
+                    #"{"type":"l2Book","coin":"BTC"}"#,
+                    #"{"type":"l2Book","coin":"BTC","nSigFigs":5,"mantissa":2}"#,
+                    #"{"type":"l2Book","coin":"BTC","nSigFigs":3}"#,
+                ])
         }
 
         @Test func `candles send the coin, interval and times in milliseconds inside req`() async throws {
@@ -87,8 +93,9 @@ extension HyperliquidKitTests {
             let candles = try await Self.market(transport)
                 .candles("xyz:XYZ100", interval: .fifteenMinutes, from: start, to: end)
             #expect(candles.isEmpty)
-            #expect(await transport.bodies.last
-                == #"{"type":"candleSnapshot","req":{"coin":"xyz:XYZ100","interval":"15m","startTime":1795496400000,"endTime":1795518752900}}"#
+            #expect(
+                await transport.bodies.last
+                    == #"{"type":"candleSnapshot","req":{"coin":"xyz:XYZ100","interval":"15m","startTime":1795496400000,"endTime":1795518752900}}"#
             )
         }
 
@@ -156,10 +163,11 @@ extension HyperliquidKitTests {
             let start = Date(timeIntervalSince1970: 1_795_500_000)
             _ = try await market.fundingHistory("BTC", from: start)
             _ = try await market.fundingHistory("BTC", from: start, to: start.addingTimeInterval(3600))
-            #expect(await transport.bodies.dropFirst() == [
-                #"{"type":"fundingHistory","coin":"BTC","startTime":1795500000000}"#,
-                #"{"type":"fundingHistory","coin":"BTC","startTime":1795500000000,"endTime":1795503600000}"#,
-            ])
+            #expect(
+                await transport.bodies.dropFirst() == [
+                    #"{"type":"fundingHistory","coin":"BTC","startTime":1795500000000}"#,
+                    #"{"type":"fundingHistory","coin":"BTC","startTime":1795500000000,"endTime":1795503600000}"#,
+                ])
         }
 
         @Test func `perpetuals at their open interest cap send the perp DEX`() async throws {
@@ -171,14 +179,20 @@ extension HyperliquidKitTests {
 
         @Test func `predicted fundings leave out venues without a prediction`() async throws {
             let transport = FakeTransport(
-                json: #"[["BTC",[["BinPerp",{"fundingRate":"0.0001","nextFundingTime":1795521600000,"fundingIntervalHours":4}],["HlPerp",null]]]]"#
+                json:
+                    #"[["BTC",[["BinPerp",{"fundingRate":"0.0001","nextFundingTime":1795521600000,"fundingIntervalHours":4}],["HlPerp",null]]]]"#
             )
             let fundings = try await Self.market(transport).predictedFundings()
-            #expect(fundings == [
-                .init(coin: "BTC", venues: [
-                    .init(exchange: .binance, rate: Decimal(string: "0.0001")!, nextFundingTime: Date(timeIntervalSince1970: 1_795_521_600))
+            #expect(
+                fundings == [
+                    .init(
+                        coin: "BTC",
+                        venues: [
+                            .init(
+                                exchange: .binance, rate: Decimal(string: "0.0001")!,
+                                nextFundingTime: Date(timeIntervalSince1970: 1_795_521_600))
+                        ])
                 ])
-            ])
             #expect(await transport.bodies == [#"{"type":"predictedFundings"}"#])
         }
 
@@ -194,15 +208,17 @@ extension HyperliquidKitTests {
         }
 
         @Test func `perp DEX limits and status send the perp DEX`() async throws {
-            let limits = #"{"totalOiCap":"10000000.0","oiSzCapPerPerp":"10000000000.0","maxTransferNtl":"100000000.0","coinToOiCap":[["xyz:XYZ100","100000.0"]]}"#
+            let limits =
+                #"{"totalOiCap":"10000000.0","oiSzCapPerPerp":"10000000000.0","maxTransferNtl":"100000000.0","coinToOiCap":[["xyz:XYZ100","100000.0"]]}"#
             let transport = FakeTransport(responses: [.json(limits), .json(#"{"totalNetDeposit":"4103492112.4478230476"}"#)])
             let market = Self.market(transport)
             let dexLimits = try await market.perpDexLimits(dex: .named("xyz"))
             #expect(dexLimits?.openInterestCaps == ["xyz:XYZ100": Decimal(100_000)])
             #expect(try await market.perpDexStatus(dex: .named("xyz")).totalNetDeposit == Decimal(string: "4103492112.4478230476"))
-            #expect(await transport.bodies == [
-                #"{"type":"perpDexLimits","dex":"xyz"}"#, #"{"type":"perpDexStatus","dex":"xyz"}"#,
-            ])
+            #expect(
+                await transport.bodies == [
+                    #"{"type":"perpDexLimits","dex":"xyz"}"#, #"{"type":"perpDexStatus","dex":"xyz"}"#,
+                ])
         }
 
         @Test func `a null answer to a read whose result isn't optional throws an unexpected response`() async {

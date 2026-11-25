@@ -52,16 +52,17 @@ extension HyperliquidKitCoreTests {
                 .tooAggressiveAtOpenInterestCapRejected, .openInterestIncreaseRejected,
                 .insufficientSpotBalanceRejected, .oracleRejected, .perpMaxPositionRejected,
             ]
-            #expect(statuses.map(\.rawValue) == [
-                "open", "filled", "canceled", "triggered", "rejected", "marginCanceled", "vaultWithdrawalCanceled",
-                "openInterestCapCanceled", "selfTradeCanceled", "reduceOnlyCanceled", "siblingFilledCanceled",
-                "delistedCanceled", "liquidatedCanceled", "scheduledCancel", "tickRejected", "minTradeNtlRejected",
-                "perpMarginRejected", "reduceOnlyRejected", "badAloPxRejected", "iocCancelRejected",
-                "badTriggerPxRejected", "marketOrderNoLiquidityRejected", "positionIncreaseAtOpenInterestCapRejected",
-                "positionFlipAtOpenInterestCapRejected", "tooAggressiveAtOpenInterestCapRejected",
-                "openInterestIncreaseRejected", "insufficientSpotBalanceRejected", "oracleRejected",
-                "perpMaxPositionRejected",
-            ])
+            #expect(
+                statuses.map(\.rawValue) == [
+                    "open", "filled", "canceled", "triggered", "rejected", "marginCanceled", "vaultWithdrawalCanceled",
+                    "openInterestCapCanceled", "selfTradeCanceled", "reduceOnlyCanceled", "siblingFilledCanceled",
+                    "delistedCanceled", "liquidatedCanceled", "scheduledCancel", "tickRejected", "minTradeNtlRejected",
+                    "perpMarginRejected", "reduceOnlyRejected", "badAloPxRejected", "iocCancelRejected",
+                    "badTriggerPxRejected", "marketOrderNoLiquidityRejected", "positionIncreaseAtOpenInterestCapRejected",
+                    "positionFlipAtOpenInterestCapRejected", "tooAggressiveAtOpenInterestCapRejected",
+                    "openInterestIncreaseRejected", "insufficientSpotBalanceRejected", "oracleRejected",
+                    "perpMaxPositionRejected",
+                ])
         }
 
         private func roundTrip(_ vocabulary: Vocabulary, _ json: String) throws -> String {

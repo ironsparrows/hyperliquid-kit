@@ -1,11 +1,14 @@
 import Foundation
 import Testing
+
 @testable import HyperliquidKit
 
 extension HyperliquidKitTests {
     @Suite("Info requests")
     struct InfoRequestTests {
-        @Test(arguments: [(Hyperliquid.Network.mainnet, "https://api.hyperliquid.xyz/info"), (.testnet, "https://api.hyperliquid-testnet.xyz/info")])
+        @Test(arguments: [
+            (Hyperliquid.Network.mainnet, "https://api.hyperliquid.xyz/info"), (.testnet, "https://api.hyperliquid-testnet.xyz/info"),
+        ])
         func `a read is a POST of its JSON body to the network's info endpoint`(network: Hyperliquid.Network, url: String) async throws {
             let transport = FakeTransport(json: #"{"universe":[],"marginTables":[]}"#)
             _ = try await InfoClient.test(transport, network: network).send(.meta(.named("xyz")))

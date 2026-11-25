@@ -28,7 +28,7 @@ extension HyperliquidKitTests.LiveTradingTests {
 
             let lower = Self.fiveSignificantFigures(price * Decimal(string: "0.99")!)
             let modified = try await client.order.modify([
-                .init(.id(id), to: .limit(.buy, "BTC", price: lower, size: size, timeInForce: .addLiquidityOnly)),
+                .init(.id(id), to: .limit(.buy, "BTC", price: lower, size: size, timeInForce: .addLiquidityOnly))
             ])
             let newID = try #require(modified.first?.orderID, "\(modified)")
 

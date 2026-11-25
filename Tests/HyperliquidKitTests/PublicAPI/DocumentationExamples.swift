@@ -54,13 +54,15 @@ enum DocumentationExamples {
 
         // A buy 10% under the mid price rests in the book. BTC's price in whole dollars is always
         // valid, and an order must be worth at least $10.
-        var exactPrice = mid * Decimal(string: "0.9")!, price = Decimal()
+        var exactPrice = mid * Decimal(string: "0.9")!
+        var price = Decimal()
         NSDecimalRound(&price, &exactPrice, 0, .down)
-        var exactSize = Decimal(11) / price, size = Decimal()
+        var exactSize = Decimal(11) / price
+        var size = Decimal()
         NSDecimalRound(&size, &exactSize, btc.sizeDecimals, .up)
 
         let placed = try await client.order.place([
-            .limit(.buy, "BTC", price: price, size: size, timeInForce: .addLiquidityOnly),
+            .limit(.buy, "BTC", price: price, size: size, timeInForce: .addLiquidityOnly)
         ])
         guard let id = placed.first?.orderID else {
             print("Not placed:", placed.first?.error ?? "")

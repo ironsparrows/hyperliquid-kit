@@ -1,5 +1,6 @@
 import HyperliquidKitTestSupport
 import Testing
+
 @testable import HyperliquidKit
 
 extension HyperliquidKitTests {

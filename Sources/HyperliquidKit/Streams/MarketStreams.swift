@@ -38,9 +38,11 @@ struct MarketStreams: Sendable {
     func candles(_ coin: Hyperliquid.Coin, interval: Hyperliquid.Candle.Interval)
         -> AsyncThrowingStream<Hyperliquid.Candle, any Error>
     {
-        connection.stream(.candle(coin, interval: interval), buffering: .all, decodeEach: { data in
-            try StreamConnection.payload(CandlePush.self, of: data).candles
-        })
+        connection.stream(
+            .candle(coin, interval: interval), buffering: .all,
+            decodeEach: { data in
+                try StreamConnection.payload(CandlePush.self, of: data).candles
+            })
     }
 
     func assetContext(_ coin: Hyperliquid.Coin) -> AsyncThrowingStream<Hyperliquid.AssetContext, any Error> {
@@ -126,8 +128,9 @@ extension StreamConnection.Subscription {
     static func l2Book(_ coin: Hyperliquid.Coin, precision: Hyperliquid.OrderBook.Precision) -> Self {
         Self(
             topic: .init(channel: "l2Book", key: coin.name),
-            request: .map([.init(key: "type", value: "l2Book"), .init(key: "coin", value: .string(coin.name))]
-                + precision.wireParameters),
+            request: .map(
+                [.init(key: "type", value: "l2Book"), .init(key: "coin", value: .string(coin.name))]
+                    + precision.wireParameters),
             coin: coin
         )
     }

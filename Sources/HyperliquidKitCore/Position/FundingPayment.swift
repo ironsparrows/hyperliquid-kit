@@ -55,7 +55,8 @@ extension Hyperliquid.FundingPayment: Decodable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         time = try container.decode(WireDate.self, forKey: .time).value
         hash = try container.decodeIfPresent(Hyperliquid.TransactionHash.self, forKey: .hash)
-        let payment = container.contains(.delta)
+        let payment =
+            container.contains(.delta)
             ? try container.decode(Payment.self, forKey: .delta) : try Payment(from: decoder)
         coin = payment.coin
         usdc = payment.usdc.value

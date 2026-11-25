@@ -72,10 +72,12 @@ extension HyperliquidKitCoreTests {
         @Test func `funding rates decode on the first perp DEX and a builder-deployed one`() throws {
             let rates = try decoder.decode([Hyperliquid.FundingRate].self, from: Fixture.data("fundingHistory", in: .market))
             #expect(rates.count == 5)
-            #expect(rates.first == .init(
-                coin: "BTC", rate: Decimal(string: "0.0000056633")!, premium: Decimal(string: "-0.0004546934")!,
-                time: Date(timeIntervalSince1970: 1_795_503_600.022)
-            ))
+            #expect(
+                rates.first
+                    == .init(
+                        coin: "BTC", rate: Decimal(string: "0.0000056633")!, premium: Decimal(string: "-0.0004546934")!,
+                        time: Date(timeIntervalSince1970: 1_795_503_600.022)
+                    ))
             let xyz = try decoder.decode([Hyperliquid.FundingRate].self, from: Fixture.data("fundingHistory_xyz", in: .market))
             #expect(xyz.allSatisfy { $0.coin.dex == .named("xyz") })
         }

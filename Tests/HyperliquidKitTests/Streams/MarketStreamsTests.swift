@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import HyperliquidKit
 
 extension HyperliquidKitTests {
@@ -41,13 +42,14 @@ extension HyperliquidKitTests {
             ]
             let session = try await transport.session()
             let sent = Set(try await session.sent(atLeast: 5))
-            #expect(sent == [
-                #"{"method":"subscribe","subscription":{"type":"l2Book","coin":"BTC","nSigFigs":5,"mantissa":2}}"#,
-                #"{"method":"subscribe","subscription":{"type":"bbo","coin":"BTC"}}"#,
-                #"{"method":"subscribe","subscription":{"type":"trades","coin":"BTC"}}"#,
-                #"{"method":"subscribe","subscription":{"type":"candle","coin":"BTC","interval":"1m"}}"#,
-                #"{"method":"subscribe","subscription":{"type":"activeAssetCtx","coin":"BTC"}}"#,
-            ])
+            #expect(
+                sent == [
+                    #"{"method":"subscribe","subscription":{"type":"l2Book","coin":"BTC","nSigFigs":5,"mantissa":2}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"bbo","coin":"BTC"}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"trades","coin":"BTC"}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"candle","coin":"BTC","interval":"1m"}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"activeAssetCtx","coin":"BTC"}}"#,
+                ])
             for reader in readers { reader.cancel() }
             await connection.disconnect()
         }
@@ -98,11 +100,12 @@ extension HyperliquidKitTests {
             _ = try await session.sent(atLeast: 1)
             full.cancel()
             let grouped = Task { for try await _ in streams.orderBook("BTC", precision: .significantFigures(.five)) {} }
-            #expect(try await session.sent(atLeast: 3) == [
-                #"{"method":"subscribe","subscription":{"type":"l2Book","coin":"BTC"}}"#,
-                #"{"method":"unsubscribe","subscription":{"type":"l2Book","coin":"BTC"}}"#,
-                #"{"method":"subscribe","subscription":{"type":"l2Book","coin":"BTC","nSigFigs":5}}"#,
-            ])
+            #expect(
+                try await session.sent(atLeast: 3) == [
+                    #"{"method":"subscribe","subscription":{"type":"l2Book","coin":"BTC"}}"#,
+                    #"{"method":"unsubscribe","subscription":{"type":"l2Book","coin":"BTC"}}"#,
+                    #"{"method":"subscribe","subscription":{"type":"l2Book","coin":"BTC","nSigFigs":5}}"#,
+                ])
             grouped.cancel()
             await connection.disconnect()
             try await eventually {

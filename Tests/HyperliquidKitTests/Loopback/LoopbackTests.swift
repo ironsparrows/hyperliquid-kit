@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import HyperliquidKit
 
 // Real HTTP to a local server, through the client's public API where it can be.

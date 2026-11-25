@@ -1,6 +1,7 @@
 import Foundation
 import NIOCore
 import Testing
+
 @testable import HyperliquidKit
 
 // Real WebSocket connections to a local server, through WebSocketKit.

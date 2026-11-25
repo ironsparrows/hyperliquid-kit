@@ -123,20 +123,26 @@ extension HyperliquidKitCoreTests {
                 Hyperliquid.UserEvent.self,
                 #"{"funding":{"time":1795521600020,"coin":"BTC","usdc":"0.634982","szi":"-0.60877","fundingRate":"0.0000125"}}"#
             )
-            #expect(funding == .funding(.init(
-                time: Date(timeIntervalSince1970: 1_795_521_600.020), hash: nil, coin: "BTC",
-                usdc: Decimal(string: "0.634982")!, positionSize: Decimal(string: "-0.60877")!,
-                rate: Decimal(string: "0.0000125")!
-            )))
+            #expect(
+                funding
+                    == .funding(
+                        .init(
+                            time: Date(timeIntervalSince1970: 1_795_521_600.020), hash: nil, coin: "BTC",
+                            usdc: Decimal(string: "0.634982")!, positionSize: Decimal(string: "-0.60877")!,
+                            rate: Decimal(string: "0.0000125")!
+                        )))
             let liquidation = try decode(
                 Hyperliquid.UserEvent.self,
                 #"{"liquidation":{"lid":7,"liquidator":"0x0000000000000000000000000000000000000001","liquidated_user":"0x0000000000000000000000000000000000000002","liquidated_ntl_pos":"1000.5","liquidated_account_value":"20.25"}}"#
             )
-            #expect(liquidation == .liquidation(.init(
-                id: .init(rawValue: 7), liquidator: "0x0000000000000000000000000000000000000001",
-                liquidatedUser: "0x0000000000000000000000000000000000000002", positionNotional: Decimal(string: "1000.5")!,
-                accountValue: Decimal(string: "20.25")!
-            )))
+            #expect(
+                liquidation
+                    == .liquidation(
+                        .init(
+                            id: .init(rawValue: 7), liquidator: "0x0000000000000000000000000000000000000001",
+                            liquidatedUser: "0x0000000000000000000000000000000000000002", positionNotional: Decimal(string: "1000.5")!,
+                            accountValue: Decimal(string: "20.25")!
+                        )))
         }
 
         @Test func `an event of an unknown kind keeps its name without reading its contents`() throws {

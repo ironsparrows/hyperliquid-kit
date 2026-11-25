@@ -19,10 +19,13 @@ extension HyperliquidKitCoreTests {
                 [Hyperliquid.Order].self,
                 #"[{"coin":"BTC","limitPx":"29792.0","oid":91490942,"side":"A","sz":"0.0","timestamp":1681247412573}]"#
             )
-            #expect(orders == [.init(
-                coin: "BTC", side: .sell, limitPrice: Decimal(29792), size: 0, id: .init(rawValue: 91_490_942),
-                time: Date(timeIntervalSince1970: 1_681_247_412.573)
-            )])
+            #expect(
+                orders == [
+                    .init(
+                        coin: "BTC", side: .sell, limitPrice: Decimal(29792), size: 0, id: .init(rawValue: 91_490_942),
+                        time: Date(timeIntervalSince1970: 1_681_247_412.573)
+                    )
+                ])
         }
 
         @Test func `a detailed pending order decodes its trigger, with no time in force or children`() throws {
@@ -47,10 +50,12 @@ extension HyperliquidKitCoreTests {
         }
 
         @Test func `a historical order decodes with its status, client ID and children`() throws {
-            let child = #"{"coin":"ETH","side":"B","limitPx":"2500.0","sz":"0.0","oid":2,"timestamp":1724361546645,"triggerCondition":"Price above 2500","isTrigger":true,"triggerPx":"2500.0","children":[],"isPositionTpsl":false,"reduceOnly":true,"orderType":"Stop Market","origSz":"0.0076","tif":null,"cloid":null}"#
+            let child =
+                #"{"coin":"ETH","side":"B","limitPx":"2500.0","sz":"0.0","oid":2,"timestamp":1724361546645,"triggerCondition":"Price above 2500","isTrigger":true,"triggerPx":"2500.0","children":[],"isPositionTpsl":false,"reduceOnly":true,"orderType":"Stop Market","origSz":"0.0076","tif":null,"cloid":null}"#
             let orders = try decode(
                 [Hyperliquid.HistoricalOrder].self,
-                #"[{"order":{"coin":"ETH","side":"A","limitPx":"2412.7","sz":"0.0","oid":1,"timestamp":1724361546645,"triggerCondition":"N/A","isTrigger":false,"triggerPx":"0.0","children":["# + child
+                #"[{"order":{"coin":"ETH","side":"A","limitPx":"2412.7","sz":"0.0","oid":1,"timestamp":1724361546645,"triggerCondition":"N/A","isTrigger":false,"triggerPx":"0.0","children":["#
+                    + child
                     + #"],"isPositionTpsl":false,"reduceOnly":true,"orderType":"Market","origSz":"0.0076","tif":"FrontendMarket","cloid":"0x00000000000000000000000000000001"},"status":"filled","statusTimestamp":1724361546645}]"#
             )
             let historical = try #require(orders.first)
@@ -114,9 +119,11 @@ extension HyperliquidKitCoreTests {
                 Hyperliquid.Fill.self,
                 #"{"coin":"ETH","px":"2000.0","sz":"1.0","side":"A","time":1681222254710,"startPosition":"1.0","dir":"Close Long","closedPnl":"-10.0","hash":"0x0000000000000000000000000000000000000000000000000000000000000001","oid":1,"crossed":true,"fee":"0.9","tid":1,"feeToken":"USDC","liquidation":{"liquidatedUser":"0x00000000000000000000000000000000000000a1","markPx":"2001.0","method":"market"}}"#
             )
-            #expect(fill.liquidation == .init(
-                liquidatedUser: "0x00000000000000000000000000000000000000a1", markPrice: Decimal(2001), method: .market
-            ))
+            #expect(
+                fill.liquidation
+                    == .init(
+                        liquidatedUser: "0x00000000000000000000000000000000000000a1", markPrice: Decimal(2001), method: .market
+                    ))
         }
 
         // MARK: TWAP
@@ -144,6 +151,7 @@ extension HyperliquidKitCoreTests {
             #expect(entries.allSatisfy { abs($0.time.timeIntervalSince($0.twap.startTime)) < 86_400 })
         }
 
-        private static let documentedFills = #"[{"closedPnl":"0.0","coin":"AVAX","crossed":false,"dir":"Open Long","hash":"0x0000000000000000000000000000000000000000000000000000000000000001","oid":90542681,"px":"18.435","side":"B","startPosition":"26.86","sz":"93.53","time":1681222254710,"fee":"0.01","feeToken":"USDC","builderFee":"0.01","tid":118906512037719},{"coin":"xyz:XYZ100","px":"25372.0","sz":"0.0353","side":"B","time":1767651180109,"startPosition":"0.7045","dir":"Open Long","closedPnl":"0.0","hash":"0x0000000000000000000000000000000000000000000000000000000000000002","oid":287286372177,"crossed":false,"fee":"0.026868","tid":164087028129848,"feeToken":"USDC"},{"coin":"@107","px":"18.62041381","sz":"43.84","side":"A","time":1735969713869,"startPosition":"10659.65434798","dir":"Sell","closedPnl":"8722.988077","hash":"0x0000000000000000000000000000000000000000000000000000000000000003","oid":59071663721,"crossed":true,"fee":"0.304521","tid":907359904431134,"feeToken":"USDC"}]"#
+        private static let documentedFills =
+            #"[{"closedPnl":"0.0","coin":"AVAX","crossed":false,"dir":"Open Long","hash":"0x0000000000000000000000000000000000000000000000000000000000000001","oid":90542681,"px":"18.435","side":"B","startPosition":"26.86","sz":"93.53","time":1681222254710,"fee":"0.01","feeToken":"USDC","builderFee":"0.01","tid":118906512037719},{"coin":"xyz:XYZ100","px":"25372.0","sz":"0.0353","side":"B","time":1767651180109,"startPosition":"0.7045","dir":"Open Long","closedPnl":"0.0","hash":"0x0000000000000000000000000000000000000000000000000000000000000002","oid":287286372177,"crossed":false,"fee":"0.026868","tid":164087028129848,"feeToken":"USDC"},{"coin":"@107","px":"18.62041381","sz":"43.84","side":"A","time":1735969713869,"startPosition":"10659.65434798","dir":"Sell","closedPnl":"8722.988077","hash":"0x0000000000000000000000000000000000000000000000000000000000000003","oid":59071663721,"crossed":true,"fee":"0.304521","tid":907359904431134,"feeToken":"USDC"}]"#
     }
 }

@@ -1,13 +1,17 @@
 import Foundation
 import Testing
+
 @testable import HyperliquidKit
 
 extension HyperliquidKitTests {
     @Suite("Asset directory", .timeLimit(.minutes(1)))
     struct AssetDirectoryTests {
-        private static let meta = #"{"universe":[{"name":"BTC","szDecimals":5,"maxLeverage":40,"marginTableId":40},{"name":"ETH","szDecimals":4,"maxLeverage":25,"marginTableId":25}],"marginTables":[]}"#
-        private static let perpDexs = #"[null,{"name":"flx","fullName":"Felix","deployer":"0x88806a71d74ad0a510b350545c9ae490912f0888"},{"name":"xyz","fullName":"XYZ","deployer":"0x88806a71d74ad0a510b350545c9ae490912f0888"}]"#
-        private static let xyzMeta = #"{"universe":[{"name":"xyz:A","szDecimals":2,"maxLeverage":10,"marginTableId":10},{"name":"xyz:B","szDecimals":3,"maxLeverage":10,"marginTableId":10}],"marginTables":[]}"#
+        private static let meta =
+            #"{"universe":[{"name":"BTC","szDecimals":5,"maxLeverage":40,"marginTableId":40},{"name":"ETH","szDecimals":4,"maxLeverage":25,"marginTableId":25}],"marginTables":[]}"#
+        private static let perpDexs =
+            #"[null,{"name":"flx","fullName":"Felix","deployer":"0x88806a71d74ad0a510b350545c9ae490912f0888"},{"name":"xyz","fullName":"XYZ","deployer":"0x88806a71d74ad0a510b350545c9ae490912f0888"}]"#
+        private static let xyzMeta =
+            #"{"universe":[{"name":"xyz:A","szDecimals":2,"maxLeverage":10,"marginTableId":10},{"name":"xyz:B","szDecimals":3,"maxLeverage":10,"marginTableId":10}],"marginTables":[]}"#
 
         @Test func `a perpetual's asset ID is its index on the first perp DEX`() async throws {
             let directory = AssetDirectory(info: .test(FakeTransport(json: Self.meta)))
