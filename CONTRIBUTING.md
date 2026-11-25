@@ -67,7 +67,7 @@ Live tests run when an API wallet's key and the account's address are set; other
 | Live streams | Streams mids, books, best bids and offers, trades, candles, market state and the compressed feeds. |
 | Live order actions | **Places an order:** rests a buy of about $11 of BTC 10% under the mid price, changes it and cancels it. |
 | Live market orders | **Trades:** buys about $11 of BTC with a market order and closes that size. |
-| Live leverage, margin and TWAP actions | **Trades:** sets BTC to 10× isolated; opens about $11 of BTC, adds and removes $1 of margin and tops it up to 5×, closes that size, and sets BTC's leverage back; starts a $110 BTC TWAP over 7 days and cancels it. A slice that filled before the cancel stays open. |
+| Live leverage, margin and TWAP actions | **Trades:** sets BTC to 10× isolated; opens about $11 of BTC, adds $2 of margin and removes $1, closes that size, and sets BTC's leverage back; starts a $110 BTC TWAP over 7 days and cancels it. A slice that filled before the cancel stays open. |
 | Live account streams | **Trades:** streams the account while it buys about $11 of BTC with a market order and closes that size; the pushes must decode. |
 
 Set them in the environment, reading the key without echo so it stays out of your shell history:

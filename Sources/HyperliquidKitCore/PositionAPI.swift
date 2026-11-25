@@ -56,10 +56,13 @@ extension Hyperliquid {
         ///   - expiresAfter: When set, Hyperliquid rejects the action if it arrives after this time.
         func adjustMargin(_ coin: Coin, by amount: Decimal, expiresAfter: Date?) async throws
 
-        /// Changes the position's isolated margin to target `leverage` instead of a USD amount.
-        /// (`topUpIsolatedOnlyMargin`)
+        /// Changes the position's isolated margin to target `leverage` instead of a USD amount, on an
+        /// isolated-only market: one whose ``Perpetual/marginMode`` is ``MarginMode/strictIsolated`` or
+        /// ``MarginMode/noCross``. (`topUpIsolatedOnlyMargin`)
         ///
-        /// A leverage that rounding to 8 decimals would change throws ``ClientError/Reason/invalidRequest`` before
+        /// On a market that allows cross margin, such as BTC, Hyperliquid rejects it with
+        /// `Invalid leverage value`; use ``adjustMargin(_:by:expiresAfter:)`` there. A leverage that
+        /// rounding to 8 decimals would change throws ``ClientError/Reason/invalidRequest`` before
         /// anything is sent.
         ///
         /// - Parameters:

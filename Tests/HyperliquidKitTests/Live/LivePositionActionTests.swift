@@ -5,8 +5,9 @@ import Testing
 
 extension HyperliquidKitTests.LiveTradingTests {
     // Trades on mainnet with the account's API wallet. Sets BTC to 10× isolated and back; opens about
-    // $11 of BTC, adds and removes $1 of margin and tops it up to 5×, then closes that size; starts a
-    // $110 BTC TWAP over 7 days and cancels it. A slice that filled before the cancel stays open.
+    // $11 of BTC, adds $2 of margin and removes $1, so it stays above what 10× needs, then closes that
+    // size; starts a $110 BTC TWAP over 7 days and cancels it. A slice that filled before the cancel
+    // stays open. Topping up to a target leverage is for isolated-only markets, so BTC doesn't take it.
     @Suite(
         "Live leverage, margin and TWAP actions", .tags(.live),
         .enabled(if: areLiveTestsEnabled, "Set HYPERLIQUID_AGENT_KEY and a valid HYPERLIQUID_ACCOUNT to run"),
@@ -34,9 +35,9 @@ extension HyperliquidKitTests.LiveTradingTests {
             let size = try await size(worth: 11)
             let opened = try await client.order.place([.market(.buy, "BTC", size: size)])
             #expect(opened.first?.status == .filled, "\(opened)")
-            try await client.position.adjustMargin("BTC", by: 1)
+            // About $1.10 backs $11 at 10×; Hyperliquid refuses a removal that leaves only that.
+            try await client.position.adjustMargin("BTC", by: 2)
             try await client.position.adjustMargin("BTC", by: -1)
-            try await client.position.topUpMargin("BTC", toLeverage: 5)
             let closed = try await client.order.close("BTC", size: size)
             #expect(closed.first?.status == .filled, "\(closed)")
 
