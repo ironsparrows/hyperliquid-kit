@@ -6,7 +6,7 @@ Read [ARCHITECTURE.md](ARCHITECTURE.md) first: it lists the targets, the access 
 
 Swift 6.4 or later. On macOS, Xcode 27.2 or later for the iOS build.
 
-Platforms: macOS 13, iOS 16, tvOS 16 and visionOS 1, and Linux, a target platform not yet built or tested. watchOS is not supported.
+Platforms: macOS 13, iOS 16, tvOS 16 and visionOS 1, and Linux, which CI builds and tests in the official `swift:6.4` image. watchOS is not supported.
 
 On Linux, the compressed streams decode through the system's zlib, so building needs zlib's development headers, such as `zlib1g-dev` on Debian and Ubuntu.
 
@@ -48,7 +48,7 @@ The code of the documentation's examples and the README's lives in `Tests/Hyperl
 
 Only this package's warnings can fail the build: SwiftPM suppresses warnings in dependencies.
 
-Linux has no local check yet. `swift build` and `swift test` on Linux are unverified until CI or a Linux machine runs them, including the `HyperliquidKitTestSupport` target, which imports Testing.
+Linux has no local check: CI builds and tests it in the official `swift:6.4` image with zlib's headers, including the `HyperliquidKitTestSupport` target, which imports Testing.
 
 ## Formatting
 

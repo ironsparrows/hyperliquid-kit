@@ -65,7 +65,7 @@ Market data and market streams need neither an account nor a signer: `Hyperliqui
 
 - Swift 6.4 or later, and Xcode 27.2 or later on Apple platforms.
 - macOS 13, iOS 16, tvOS 16 or visionOS 1. watchOS is not supported.
-- Linux is a target platform that isn't built or tested yet. It needs zlib's development headers, such as
+- Linux, which CI builds and tests in the official `swift:6.4` image. It needs zlib's development headers, such as
   `zlib1g-dev` on Debian and Ubuntu.
 
 Add the package with Swift Package Manager, then add the `HyperliquidKit` product to your target:
