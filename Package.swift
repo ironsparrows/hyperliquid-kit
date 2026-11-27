@@ -26,7 +26,7 @@ let package = Package(
         .package(url: "https://github.com/21-DOT-DEV/swift-secp256k1.git", .upToNextMinor(from: "0.25.1")),
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "1.10.0"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.100.0"),
-        .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.37.1"),
+        .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.35.0"),
         .package(url: "https://github.com/vapor/websocket-kit.git", from: "2.16.2"),
     ],
     targets: [
