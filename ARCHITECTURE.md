@@ -46,7 +46,7 @@ The three deflate-compressed streams (`l2` order book diffs, `fastAssetCtxs` and
 
 ## Folders and files
 
-- `HyperliquidKitCore` has one folder per property of `Hyperliquid.API`, named after it: `Market/`, `Account/`, `Position/`, `Order/`, `Twap/` and `Stream/`. Each holds its domain's protocol, such as `MarketAPI.swift`, then the models and request values its methods take or return. A model that a stream and a REST read share stays with the REST domain; `Stream/` holds `StreamAPI.swift` and the models only a stream pushes. The root holds the namespace (`Hyperliquid.swift`), `API.swift` and what three or more domains use: errors, addresses, coins, perp DEXs, identifiers, the network, the signer and the vocabulary. A file with no `public` declaration goes in `Internal/`.
+- `HyperliquidKitCore` has one folder per property of `Hyperliquid.API`, named after it: `Market/`, `Account/`, `Position/`, `Order/`, `Twap/` and `Stream/`. Each holds its domain's protocol, such as `MarketAPI.swift`, then the models and request values its methods take or return. A model that a stream and a REST read share stays with the REST domain; `Stream/` holds `StreamAPI.swift` and the models only a stream pushes. The root holds the namespace (`Hyperliquid.swift`), `API.swift` and what three or more domains use: errors, addresses, coins, perp DEXs, identifiers, the network, the signer, the vocabulary, and Hyperliquid's request weights and response sizes. A file with no `public` declaration goes in `Internal/`.
 - `HyperliquidKit`'s root holds only its public files: `Client.swift`, `Exports.swift` and `PrivateKeySigner.swift`. Its internals are grouped by mechanism:
 
   | Folder | Holds |
@@ -86,6 +86,7 @@ One word per concept in code, comments and docs.
 | account | the address whose state is read and traded | `user` |
 | signer | the key that signs: the account's own or an API wallet | "API wallet", "agent wallet" |
 | action | a signed write to `/exchange` | `action` |
+| weight | what a REST request costs against what each IP may spend a minute | weight |
 | size | an amount in the base coin | `sz` |
 | fill | one execution of the account's order | `userFills`, `fills` |
 | trade | one public execution | `trades`, `recentTrades` |

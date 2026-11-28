@@ -136,6 +136,11 @@ stream.
 - ``Hyperliquid/StreamAPI/assetContexts()``
 - ``Hyperliquid/MarketPrices``
 
+### Request weights and response sizes
+
+- ``Hyperliquid/RequestWeight``
+- ``Hyperliquid/ResponseSize``
+
 ### Errors and nonces
 
 - ``HyperliquidError``
